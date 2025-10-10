@@ -1,0 +1,36 @@
+{
+  "name": "@feardread/fear-ai-agent",
+  "version": "1.0.0",
+  "description": "AI-powered personal development and network security agent",
+  "main": "index.js",
+  "scripts": {
+    "start": "node agent.js",
+    "dev": "DEBUG=1 node agent.js",
+    "test": "echo \"Tests coming soon\" && exit 0"
+  },
+  "keywords": [
+    "security",
+    "network",
+    "ai",
+    "vulnerability-scanner",
+    "code-analysis",
+    "traffic-monitor",
+    "claude"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/security-ai-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/security-ai-agent/issues"
+  }
+}

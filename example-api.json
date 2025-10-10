@@ -1,0 +1,65 @@
+{
+  "name": "Sample API Security Test Collection",
+  "description": "Example collection for testing REST API endpoints",
+  "baseUrl": "https://api.example.com",
+  "endpoints": [
+    {
+      "name": "Get Users",
+      "url": "https://api.example.com/api/v1/users",
+      "method": "GET",
+      "description": "Retrieve list of users"
+    },
+    {
+      "name": "User Login",
+      "url": "https://api.example.com/api/v1/auth/login",
+      "method": "POST",
+      "description": "User authentication endpoint"
+    },
+    {
+      "name": "Get User by ID",
+      "url": "https://api.example.com/api/v1/users/123",
+      "method": "GET",
+      "description": "Retrieve specific user details"
+    },
+    {
+      "name": "Update User",
+      "url": "https://api.example.com/api/v1/users/123",
+      "method": "PUT",
+      "description": "Update user information"
+    },
+    {
+      "name": "Delete User",
+      "url": "https://api.example.com/api/v1/users/123",
+      "method": "DELETE",
+      "description": "Delete user account"
+    },
+    {
+      "name": "Search Products",
+      "url": "https://api.example.com/api/v1/products/search",
+      "method": "GET",
+      "description": "Search products (test for injection)"
+    },
+    {
+      "name": "File Upload",
+      "url": "https://api.example.com/api/v1/upload",
+      "method": "POST",
+      "description": "File upload endpoint"
+    },
+    {
+      "name": "Admin Panel",
+      "url": "https://api.example.com/api/v1/admin/dashboard",
+      "method": "GET",
+      "description": "Test for broken access control"
+    }
+  ],
+  "testConfig": {
+    "timeout": 5000,
+    "retries": 1,
+    "delayBetweenTests": 1000
+  },
+  "notes": [
+    "Replace api.example.com with your actual API domain",
+    "Ensure you have permission to test these endpoints",
+    "Some tests may trigger security alerts - use responsibly"
+  ]
+}
