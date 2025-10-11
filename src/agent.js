@@ -5,13 +5,15 @@
 const readline = require('readline');
 const SecurityScanner = require('./modules/security/scanner');
 const TrafficMonitor = require('./modules/security/monitor');
-const AIAnalyzer = require('./modules/analyze/analyzer');
-const CodeAnalyzer = require('./modules/code/code-analyzer');
-const APITester = require('./modules/api-tester');
+const AIAnalyzer = require('./modules/analyze/ai');
+const CodeAnalyzer = require('./modules/code/analyzer');
+const APITester = require('./modules/analyze/api');
 const CVEDatabase = require('./modules/cve-database');
-const CodeRefactor = require('./modules/code/code-refactor');
+const CodeRefactor = require('./modules/code/refactor');
+const Colorizer = require('./modules/utils/colorizer');
 
-function SecurityAgent() {
+
+const SecurityAgent = function() {
   this.scanner = new SecurityScanner();
   this.trafficMonitor = new TrafficMonitor();
   this.aiAnalyzer = new AIAnalyzer();
@@ -19,16 +21,7 @@ function SecurityAgent() {
   this.apiTester = new APITester();
   this.cveDatabase = new CVEDatabase();
   this.codeRefactor = new CodeRefactor();
-  this.colors = {
-    reset: '\x1b[0m',
-    bright: '\x1b[1m',
-    cyan: '\x1b[36m',
-    green: '\x1b[32m',
-    yellow: '\x1b[33m',
-    red: '\x1b[31m',
-    magenta: '\x1b[35m',
-    blue: '\x1b[34m'
-  };
+  this.colors = new Colorizer().getColors();
   this.commands = {
     // Scanning commands
     'scan-ports': args => this.scanner.scanPorts(args),
@@ -48,10 +41,11 @@ function SecurityAgent() {
     
     // AI commands
     'ai-analyze': args => this.aiAnalyzer.analyzeCode(args),
+    'ai-generate': args => this.aiAnalyzer.generateNodeCode(args),
     'ai-threat': args => this.aiAnalyzer.threatAssessment(args),
     'ai-explain': args => this.aiAnalyzer.explainVulnerability(args),
-    'setup-api': args => this.aiAnalyzer.setupAPI(args),
-    'switch-provider': args => this.aiAnalyzer.switchProvider(args),
+    'setup-ai': args => this.aiAnalyzer.setup(args),
+    'switch-provider': args => this.aiAnalyzer.setProvider(args),
     
     // CVE & Security Database commands
     'search-cve': args => this.cveDatabase.searchCVE(args),
@@ -60,7 +54,7 @@ function SecurityAgent() {
     'check-exploits': args => this.cveDatabase.checkExploits(args),
     'scan-deps': args => this.cveDatabase.scanDependencies(args),
     'export-cve': args => this.cveDatabase.exportCVEReport(args),
-    
+     
     // API Testing commands
     'test-endpoint': args => this.apiTester.testEndpoint(args),
     'test-collection': args => this.apiTester.testCollection(args),

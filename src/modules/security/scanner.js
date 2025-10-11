@@ -147,7 +147,7 @@ class Scanner {
         console.log();
       }
       
-      console.log('������ Recommendations:');
+      console.log('Recommendations:');
       console.log('  • Run "npm audit" for vulnerability scan');
       console.log('  • Run "npm outdated" to check for updates');
       console.log('  • Consider using "npm audit fix" for auto-fixes\n');

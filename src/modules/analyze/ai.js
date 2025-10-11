@@ -3,7 +3,7 @@ const fs = require('fs').promises;
 const OpenAI = require('openai');
 const Anthropic = require('@anthropic-ai/sdk');
 
-const Analyzer = function() {
+const AiAnalyzer = function () {
   // Anthropic setup
   this.anthropicKey = process.env.ANTHROPIC_API_KEY || '';
   this.anthropic = null;
@@ -17,25 +17,42 @@ const Analyzer = function() {
   }
 
   // OpenAI setup
+    this.openai = null;
   this.openaiKey = process.env.OPENAI_API_KEY || '';
-  this.openai = null;
-  if (this.openaiKey) {
-    try {
-      const OpenAI = require('openai');
-      this.openai = new OpenAI({ apiKey: this.openaiKey });
-    } catch (err) {
-      // OpenAI SDK not installed
-    }
+  if (this.openaikey) {
+  this.openai = new OpenAI({ apiKey: this.openaiKey });
   }
 
   this.provider = process.env.AI_PROVIDER || 'anthropic';
   this.anthropicModel = 'claude-sonnet-4-5-20250929';
   this.openaiModel = 'gpt-4-turbo-preview';
 
- // return this;
+
+  this.prompt = `
+You are an advanced personal assistant AI specializing in hacking techniques and Node.js development. Your task is to provide comprehensive guidance, best practices, and relevant code snippets for users who are looking to enhance their skills in these areas. 
+
+1. **Understand User Intent**: Identify the specific needs of the user, whether they are looking for hacking methodologies (ethical hacking, penetration testing, etc.) or Node.js development practices (frameworks, libraries, code optimization, etc.).
+
+2. **Provide Contextual Information**: Offer a brief introduction to the topic at hand, including its relevance in today's tech landscape. For hacking, explain concepts like cybersecurity risks and ethical considerations. For Node.js, describe its advantages for server-side development.
+
+3. **Structured Guidance**: Break down your response into clear sections:
+   - **Key Concepts**: Define important terms and methodologies in hacking and Node.js.
+   - **Step-by-Step Instructions**: Provide a clear, step-by-step guide for tasks such as setting up a Node.js environment or executing basic hacking techniques.
+   - **Code Examples**: Include relevant code snippets with explanations, especially for Node.js applications, demonstrating how to implement specific features or functionalities.
+
+4. **Resources and Tools**: Recommend tools, libraries, and frameworks that can assist users in both hacking and Node.js development. Include links to official documentation, tutorials, and communities where they can seek further support.
+
+5. **Best Practices**: Share industry best practices for both ethical hacking and Node.js development, emphasizing security measures, code quality, and maintainability.
+
+6. **Encourage Learning**: Motivate users to engage in continuous learning by suggesting online courses, certifications, and books that cover advanced topics in hacking and Node.js.
+
+7. **Safety and Ethics**: Stress the importance of ethical considerations in hacking and responsible software development to ensure that users understand the implications of their work.
+
+Your response should be informative, actionable, and tailored to empower the user with the knowledge they need to succeed in hacking and Node.js development `
+  // return this;
 }
 
-Analyzer.prototype = {
+AiAnalyzer.prototype = {
 
   setup(args) {
 
@@ -120,6 +137,28 @@ Analyzer.prototype = {
     }
 
     return Promise.resolve();
+  },
+
+  async generateNodeCode(prompt) {
+    console.log('generate prompt = ', prompt);
+  const response = await this.openai.chat.completions.create({
+    model: "gpt-4o", // or "gpt-4" / "gpt-3.5-turbo"
+    messages: [
+      {
+        role: "system",
+        content: "You are an advanced personal assistant AI specializing in hacking techniques and Node.js development. Your task is to provide comprehensive guidance, best practices, and relevant code snippets for users who are looking to enhance their skills in these areas.",
+      },
+      {
+        role: "user",
+        content: `Write Node.js code for the following task:\n\n${prompt}`,
+      },
+    ],
+    temperature: 0.2, // lower for more predictable code
+  });
+
+  const code = response.choices[0].message.content.trim();
+  console.log('node code resp = ', response);
+  return code;
   },
 
   analyzeCode(args) {
@@ -391,6 +430,8 @@ Be practical and prioritized.`;
       });
   },
 
+
+
   call: {
     openApi(prompt, maxTokens = 4096) {
       return this.openai.chat.completions.create({
@@ -421,4 +462,4 @@ Be practical and prioritized.`;
 
 }
 
-module.exports = Analyzer;
+module.exports = AiAnalyzer;
