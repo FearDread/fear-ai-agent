@@ -1,12 +1,13 @@
 {
   "name": "@feardread/fear-ai-agent",
-  "version": "1.0.0",
-  "description": "AI-powered personal development and network security agent",
+  "version": "1.0.1",
+  "description": "AI-powered personal development and network security agent with API testing and CVE database integration",
   "main": "index.js",
   "scripts": {
-    "start": "node agent.js",
+    "start": "node index.js",
     "dev": "DEBUG=1 node agent.js",
-    "test": "echo \"Tests coming soon\" && exit 0"
+    "test": "echo \"Tests coming soon\" && exit 0",
+    "test-api": "node agent.js -c 'test-collection sample-api-collection.json'"
   },
   "keywords": [
     "security",
@@ -15,12 +16,23 @@
     "vulnerability-scanner",
     "code-analysis",
     "traffic-monitor",
-    "claude"
+    "api-testing",
+    "cve-database",
+    "penetration-testing",
+    "security-audit",
+    "claude",
+    "openai",
+    "gpt"
   ],
-  "author": "Your Name",
+  "author": "Garrett Haptonstall (FearDread)",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.1"
+    "@anthropic-ai/sdk": "^0.32.1",
+    "openai": "^4.68.0"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "openai": "^4.68.0"
   },
   "devDependencies": {},
   "engines": {

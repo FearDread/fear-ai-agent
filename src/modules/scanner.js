@@ -4,7 +4,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
 
-class SecurityScanner {
+class Scanner {
   constructor() {
     this.commonPorts = {
       20: 'FTP Data',
@@ -33,7 +33,7 @@ class SecurityScanner {
     const startPort = parseInt(args[1]) || 1;
     const endPort = parseInt(args[2]) || 1024;
     
-    console.log(`\n������ Port Scan Report`);
+    console.log(`\n������ Port Scan Report`);
     console.log(`═══════════════════════════════════════`);
     console.log(`Target: ${host}`);
     console.log(`Range: ${startPort}-${endPort}`);
@@ -74,7 +74,7 @@ class SecurityScanner {
     
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     
-    console.log(`\n\n������ Scan Summary`);
+    console.log(`\n\n������ Scan Summary`);
     console.log(`═══════════════════════════════════════`);
     console.log(`Total ports scanned: ${total}`);
     console.log(`Open ports: ${openPorts.length}`);
@@ -84,7 +84,7 @@ class SecurityScanner {
       console.log(`\n⚠️  Security Notes:`);
       openPorts.forEach(({ port, service }) => {
         if ([21, 23, 445, 3389].includes(port)) {
-          console.log(`  ������ Port ${port} (${service}) - Consider closing if unused`);
+          console.log(`  ������ Port ${port} (${service}) - Consider closing if unused`);
         }
       });
     }
@@ -122,7 +122,7 @@ class SecurityScanner {
       const data = await fs.readFile(pkgPath, 'utf8');
       const pkg = JSON.parse(data);
       
-      console.log('\n������ Dependency Analysis');
+      console.log('\n������ Dependency Analysis');
       console.log(`═══════════════════════════════════════`);
       console.log(`Project: ${pkg.name || 'Unknown'}`);
       console.log(`Version: ${pkg.version || 'Unknown'}`);
@@ -132,7 +132,7 @@ class SecurityScanner {
       const devDeps = pkg.devDependencies || {};
       
       if (Object.keys(deps).length > 0) {
-        console.log('������ Production Dependencies:');
+        console.log('������ Production Dependencies:');
         Object.entries(deps).forEach(([name, ver]) => {
           console.log(`  • ${name}: ${ver}`);
         });
@@ -140,14 +140,14 @@ class SecurityScanner {
       }
       
       if (Object.keys(devDeps).length > 0) {
-        console.log('������ Dev Dependencies:');
+        console.log('������ Dev Dependencies:');
         Object.entries(devDeps).forEach(([name, ver]) => {
           console.log(`  • ${name}: ${ver}`);
         });
         console.log();
       }
       
-      console.log('������ Recommendations:');
+      console.log('������ Recommendations:');
       console.log('  • Run "npm audit" for vulnerability scan');
       console.log('  • Run "npm outdated" to check for updates');
       console.log('  • Consider using "npm audit fix" for auto-fixes\n');
@@ -160,13 +160,13 @@ class SecurityScanner {
   async getNetworkInfo() {
     const interfaces = os.networkInterfaces();
     
-    console.log('\n������ Network Interface Information');
+    console.log('\n������ Network Interface Information');
     console.log(`═══════════════════════════════════════`);
     console.log(`Hostname: ${os.hostname()}`);
     console.log(`Platform: ${os.platform()} ${os.arch()}\n`);
     
     Object.entries(interfaces).forEach(([name, addrs]) => {
-      console.log(`������ ${name}:`);
+      console.log(`������ ${name}:`);
       addrs.forEach(addr => {
         const status = addr.internal ? '(Internal)' : '(External)';
         console.log(`  ${addr.family.padEnd(6)} ${addr.address.padEnd(40)} ${status}`);
@@ -181,7 +181,7 @@ class SecurityScanner {
   async securityAudit(args) {
     const dir = args[0] || '.';
     
-    console.log('\n������ Security Audit Report');
+    console.log('\n������ Security Audit Report');
     console.log(`═══════════════════════════════════════`);
     console.log(`Directory: ${path.resolve(dir)}`);
     console.log(`Date: ${new Date().toLocaleString()}\n`);
@@ -284,7 +284,7 @@ class SecurityScanner {
       });
     });
     
-    console.log('\n\n������ Security Recommendations:');
+    console.log('\n\n������ Security Recommendations:');
     console.log('  • Keep Node.js and dependencies updated');
     console.log('  • Use environment variables for secrets');
     console.log('  • Implement HTTPS in production');
@@ -296,4 +296,4 @@ class SecurityScanner {
   }
 }
 
-module.exports = SecurityScanner;
+module.exports = Scanner;

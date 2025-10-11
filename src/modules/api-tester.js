@@ -4,7 +4,7 @@ const http = require('http');
 const { URL } = require('url');
 const fs = require('fs').promises;
 
-class APITester {
+class Tester {
   constructor() {
     this.testResults = [];
     this.vulnerabilities = [];
@@ -69,7 +69,7 @@ class APITester {
       return;
     }
 
-    console.log(`\ní ½í´ API Endpoint Security Test`);
+    console.log(`\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ API Endpoint Security Test`);
     console.log(`â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•`);
     console.log(`URL: ${url}`);
     console.log(`Method: ${method}`);
@@ -91,7 +91,7 @@ class APITester {
   }
 
   async testBasicSecurity(url, method) {
-    console.log('í ½í³‹ Testing Basic Security...');
+    console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Testing Basic Security...');
     
     try {
       // Test HTTPS
@@ -128,7 +128,7 @@ class APITester {
   }
 
   async testHeaders(url) {
-    console.log('í ½í´ Testing Security Headers...');
+    console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Testing Security Headers...');
     
     try {
       const response = await this.makeRequest(url, 'GET');
@@ -165,7 +165,7 @@ class APITester {
   }
 
   async testAuthentication(url, method) {
-    console.log('í ½í´‘ Testing Authentication...');
+    console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Testing Authentication...');
     
     try {
       // Test without auth
@@ -245,7 +245,7 @@ class APITester {
   }
 
   async testInputValidation(url, method) {
-    console.log('í ½í»¡ï¸  Testing Input Validation...');
+    console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¸  Testing Input Validation...');
     
     if (method === 'GET') {
       await this.testQueryParams(url);
@@ -323,7 +323,7 @@ class APITester {
   }
 
   async testHTTPMethods(url) {
-    console.log('í ½í´§ Testing HTTP Methods...');
+    console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Testing HTTP Methods...');
     
     const methods = ['OPTIONS', 'HEAD', 'PUT', 'DELETE', 'PATCH', 'TRACE'];
     const allowedMethods = [];
@@ -407,7 +407,7 @@ class APITester {
   }
 
   displayResults() {
-    console.log('\n\ní ½í³Š Test Results');
+    console.log('\n\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Test Results');
     console.log(`â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n`);
 
     // Display vulnerabilities by severity
@@ -417,25 +417,25 @@ class APITester {
     const low = this.vulnerabilities.filter(v => v.severity === 'LOW');
 
     if (critical.length > 0) {
-      console.log('í ½í´´ CRITICAL Vulnerabilities:');
+      console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ CRITICAL Vulnerabilities:');
       critical.forEach(v => this.printVulnerability(v));
       console.log();
     }
 
     if (high.length > 0) {
-      console.log('í ½í¿  HIGH Vulnerabilities:');
+      console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ HIGH Vulnerabilities:');
       high.forEach(v => this.printVulnerability(v));
       console.log();
     }
 
     if (medium.length > 0) {
-      console.log('í ½í¿¡ MEDIUM Vulnerabilities:');
+      console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ MEDIUM Vulnerabilities:');
       medium.forEach(v => this.printVulnerability(v));
       console.log();
     }
 
     if (low.length > 0) {
-      console.log('í ½í¿¢ LOW Vulnerabilities:');
+      console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ LOW Vulnerabilities:');
       low.forEach(v => this.printVulnerability(v));
       console.log();
     }
@@ -445,7 +445,7 @@ class APITester {
     }
 
     // Summary
-    console.log('í ½í³ˆ Summary:');
+    console.log('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Summary:');
     console.log(`  Critical: ${critical.length}`);
     console.log(`  High: ${high.length}`);
     console.log(`  Medium: ${medium.length}`);
@@ -455,7 +455,7 @@ class APITester {
 
     // Security Score
     const score = this.calculateSecurityScore(critical.length, high.length, medium.length, low.length);
-    console.log(`í ¼í¾¯ Security Score: ${score}/100`);
+    console.log(`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Security Score: ${score}/100`);
     console.log();
   }
 
@@ -495,7 +495,7 @@ class APITester {
       const data = await fs.readFile(filePath, 'utf8');
       const collection = JSON.parse(data);
 
-      console.log(`\ní ½í´ Testing API Collection: ${collection.name}`);
+      console.log(`\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Testing API Collection: ${collection.name}`);
       console.log(`â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•`);
       console.log(`Endpoints: ${collection.endpoints.length}\n`);
 
@@ -538,4 +538,4 @@ class APITester {
   }
 }
 
-module.exports = APITester;
+module.exports = Tester;

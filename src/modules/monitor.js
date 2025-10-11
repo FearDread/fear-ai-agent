@@ -3,7 +3,7 @@ const { spawn } = require('child_process');
 const fs = require('fs').promises;
 const os = require('os');
 
-class TrafficMonitor {
+class Monitor {
   constructor() {
     this.monitoring = false;
     this.tcpdumpProcess = null;
@@ -41,7 +41,7 @@ class TrafficMonitor {
 
     const iface = args[0] || this.getDefaultInterface();
     
-    console.log(`\ní ½í³¡ Starting Traffic Monitor`);
+    console.log(`\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Starting Traffic Monitor`);
     console.log(`â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•`);
     console.log(`Interface: ${iface}`);
     console.log(`Time: ${new Date().toLocaleString()}`);
@@ -136,7 +136,7 @@ class TrafficMonitor {
       });
 
       if (established > 0) {
-        console.log(`í ½í³Š Active connections: ${established}`);
+        console.log(`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Active connections: ${established}`);
       }
     });
   }
@@ -228,13 +228,13 @@ class TrafficMonitor {
     if (suspicious.length > 0) {
       suspicious.forEach(s => {
         this.stats.suspicious.push(s);
-        console.log(`í ½íº¨ ${s.type}: ${s.detail}`);
+        console.log(`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ${s.type}: ${s.detail}`);
       });
     }
   }
 
   displayLiveStats() {
-    console.log(`\ní ½í³Š Live Stats (${this.stats.packets.total} packets)`);
+    console.log(`\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Live Stats (${this.stats.packets.total} packets)`);
     console.log(`  TCP: ${this.stats.packets.tcp} | UDP: ${this.stats.packets.udp} | ICMP: ${this.stats.packets.icmp}`);
     console.log(`  HTTP: ${this.stats.protocols.http} | HTTPS: ${this.stats.protocols.https} | DNS: ${this.stats.protocols.dns}`);
   }
@@ -269,10 +269,10 @@ class TrafficMonitor {
     const minutes = Math.floor(duration / 60);
     const seconds = duration % 60;
 
-    console.log(`\ní ½í³Š Traffic Statistics`);
+    console.log(`\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Traffic Statistics`);
     console.log(`â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•`);
     console.log(`Duration: ${minutes}m ${seconds}s`);
-    console.log(`Status: ${this.monitoring ? 'í ½í¿¢ Active' : 'í ½í´´ Stopped'}\n`);
+    console.log(`Status: ${this.monitoring ? 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Active' : 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Stopped'}\n`);
 
     console.log(`Packets:`);
     console.log(`  Total: ${this.stats.packets.total}`);
@@ -289,7 +289,7 @@ class TrafficMonitor {
     console.log(`  FTP: ${this.stats.protocols.ftp}\n`);
 
     if (this.stats.suspicious.length > 0) {
-      console.log(`í ½íº¨ Suspicious Activity (${this.stats.suspicious.length} events):`);
+      console.log(`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Suspicious Activity (${this.stats.suspicious.length} events):`);
       const recent = this.stats.suspicious.slice(-10);
       recent.forEach(s => {
         console.log(`  [${s.timestamp.toLocaleTimeString()}] ${s.type}: ${s.detail}`);
@@ -357,4 +357,4 @@ class TrafficMonitor {
   }
 }
 
-module.exports = TrafficMonitor;
+module.exports = Monitor;
