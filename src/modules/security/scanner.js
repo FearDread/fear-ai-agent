@@ -4,8 +4,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
 
-class Scanner {
-  constructor() {
+const Scanner = function() {
     this.commonPorts = {
       20: 'FTP Data',
       21: 'FTP Control',
@@ -26,7 +25,9 @@ class Scanner {
       8443: 'HTTPS Alt',
       27017: 'MongoDB'
     };
-  }
+}
+
+Scanner.prototype = {
 
   async scanPorts(args) {
     const host = args[0] || '127.0.0.1';
@@ -89,7 +90,7 @@ class Scanner {
       });
     }
     console.log();
-  }
+  },
 
   checkPort(host, port, timeout = 1000) {
     return new Promise((resolve) => {
@@ -112,7 +113,7 @@ class Scanner {
       
       socket.connect(port, host);
     });
-  }
+  },
 
   async checkDependencies(args) {
     const dir = args[0] || '.';
@@ -155,7 +156,7 @@ class Scanner {
     } catch (err) {
       console.log(`❌ Could not read package.json: ${err.message}\n`);
     }
-  }
+  },
 
   async getNetworkInfo() {
     const interfaces = os.networkInterfaces();
@@ -176,7 +177,7 @@ class Scanner {
       });
       console.log();
     });
-  }
+  },
 
   async securityAudit(args) {
     const dir = args[0] || '.';
@@ -293,7 +294,7 @@ class Scanner {
     console.log('  • Implement proper input validation');
     console.log('  • Use parameterized queries for databases');
     console.log('  • Enable CORS properly\n');
-  }
+  },
 }
 
 module.exports = Scanner;

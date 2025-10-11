@@ -1,7 +1,7 @@
 // modules/code-refactor.js - JavaScript Code Refactoring Tools
 const fs = require('fs').promises;
 const path = require('path');
-const Colorizer = require('../utils/colorizer');
+const colorizer = require('../utils/colorizer');
 
 const CodeRefactor = function () {
   this.refactorPatterns = {
@@ -12,7 +12,7 @@ const CodeRefactor = function () {
     'modernize': this.modernizeCode.bind(this)
   };
 
-  this.colors = new Colorizer().getColors();
+  this.colors = colorizer.getColors();
 }
 
 CodeRefactor.prototype = {
