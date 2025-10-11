@@ -65,13 +65,13 @@ const SecAgent = function() {
 }
 
 SecAgent.prototype.start = function() {
-  console.log('\n🛡️  Security AI Agent v2.2');
-  console.log('═══════════════════════════════════════');
-  console.log('🤖 AI Provider:', this.aiAnalyzer.getProvider(), this.aiAnalyzer.configure() ? '✅' : '❌');
-  console.log('📡 Traffic Monitor: Ready');
-  console.log('🔍 Security Scanner: Ready');
-  console.log('🌐 API Tester: Ready');
-  console.log('🗄️  CVE Database: Ready');
+  console.log('\nSecurity AI Agent v2.2');
+  console.log('========================================');
+  console.log('* AI Provider:', this.aiAnalyzer.getProvider(), this.aiAnalyzer.configure() ? '✅' : '❌');
+  console.log('* Traffic Monitor: Ready');
+  console.log('* Security Scanner: Ready');
+  console.log('* API Tester: Ready');
+  console.log('* CVE Database: Ready');
   console.log('\nType "help" for available commands\n');
   
   const rl = readline.createInterface({
