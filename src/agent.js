@@ -83,35 +83,25 @@ const SecurityAgent = function() {
   };
 
   this.logo = `
-  
-   /$$$$$$$$ /$$$$$$$$  /$$$$$$  /$$$$$$$           
-| $$_____/| $$_____/ /$$__  $$| $$__  $$          
-| $$      | $$      | $$  \ $$| $$  \ $$          
-| $$$$$   | $$$$$   | $$$$$$$$| $$$$$$$/          
-| $$__/   | $$__/   | $$__  $$| $$__  $$          
-| $$      | $$      | $$  | $$| $$  \ $$          
-| $$      | $$$$$$$$| $$  | $$| $$  | $$          
-|__/      |________/|__/  |__/|__/  |__/          
-                                                  
-                                                  
-                                                  
-  /$$$$$$   /$$$$$$  /$$$$$$$$ /$$   /$$ /$$$$$$$$
- /$$__  $$ /$$__  $$| $$_____/| $$$ | $$|__  $$__/
-| $$  \ $$| $$  \__/| $$      | $$$$| $$   | $$   
-| $$$$$$$$| $$ /$$$$| $$$$$   | $$ $$ $$   | $$   
-| $$__  $$| $$|_  $$| $$__/   | $$  $$$$   | $$   
-| $$  | $$| $$  \ $$| $$      | $$\  $$$   | $$   
-| $$  | $$|  $$$$$$/| $$$$$$$$| $$ \  $$   | $$   
-|__/  |__/ \______/ |________/|__/  \__/   |__/   
-                                                  
-                                                  
+                                        
+@@@@@@@@  @@@@@@@@   @@@@@@   @@@@@@@   
+@@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@@  
+@@!       @@!       @@!  @@@  @@!  @@@  
+!@!       !@!       !@!  @!@  !@!  @!@  
+@!!!:!    @!!!:!    @!@!@!@!  @!@!!@!   
+!!!!!:    !!!!!:    !!!@!!!!  !!@!@!    
+!!:       !!:       !!:  !!!  !!: :!!   
+:!:       :!:       :!:  !:!  :!:  !:!  
+ ::        :: ::::  ::   :::  ::   :::  
+ :        : :: ::    :   : :   :   : :                                                                                                                                                          
 `;
 
 }
 
 SecurityAgent.prototype = {
   start() {
-    console.log(C.header('Security AI Agent v2.3'));
+    console.log(C.header(this.logo));
+    console.log(C.box('-- The Security & DevOps AI --'));
     console.log(C.separator());
     console.log(C.cyan('AI Provider: ') + C.bright(this.aiAnalyzer.getProvider()) + ' ' + 
       (this.aiAnalyzer.configure() ? C.green('[READY]') : C.red('[NOT CONFIGURED]')));
@@ -166,8 +156,7 @@ SecurityAgent.prototype = {
   },
 
   showHelp() {
-    console.log(C.box(this.logo));
-
+    console.log(C.box('-- FEAR AI Help Menu: --'));
     console.log(C.section('NETWORK SCANNING'));
     console.log(C.bullet('scan-ports [host] [start] [end]  - Scan ports (default: localhost 1-1024)'));
     console.log(C.bullet('network-info                     - Display network interfaces'));
