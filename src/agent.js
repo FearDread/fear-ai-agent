@@ -3,21 +3,32 @@
 // Run: node agent.js
 
 const readline = require('readline');
-const Scanner = require('./modules/scanner');
-const Monitor = require('./modules/monitor');
-const Analyzer = require('./modules/analyzer');
-const CodeAnalyzer = require('./modules/code-analyzer');
-const Tester = require('./modules/api-tester');
-const CVE = require('./modules/cve-database');
+const SecurityScanner = require('./modules/security/scanner');
+const TrafficMonitor = require('./modules/security/monitor');
+const AIAnalyzer = require('./modules/analyze/analyzer');
+const CodeAnalyzer = require('./modules/code/code-analyzer');
+const APITester = require('./modules/api-tester');
+const CVEDatabase = require('./modules/cve-database');
+const CodeRefactor = require('./modules/code/code-refactor');
 
-const SecAgent = function() {
-  this.scanner = new Scanner();
-  this.trafficMonitor = new Monitor();
-  this.aiAnalyzer = new Analyzer();
+function SecurityAgent() {
+  this.scanner = new SecurityScanner();
+  this.trafficMonitor = new TrafficMonitor();
+  this.aiAnalyzer = new AIAnalyzer();
   this.codeAnalyzer = new CodeAnalyzer();
-  this.apiTester = new Tester();
-  this.cveDatabase = new CVE();
-  
+  this.apiTester = new APITester();
+  this.cveDatabase = new CVEDatabase();
+  this.codeRefactor = new CodeRefactor();
+  this.colors = {
+    reset: '\x1b[0m',
+    bright: '\x1b[1m',
+    cyan: '\x1b[36m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    red: '\x1b[31m',
+    magenta: '\x1b[35m',
+    blue: '\x1b[34m'
+  };
   this.commands = {
     // Scanning commands
     'scan-ports': args => this.scanner.scanPorts(args),
@@ -39,8 +50,8 @@ const SecAgent = function() {
     'ai-analyze': args => this.aiAnalyzer.analyzeCode(args),
     'ai-threat': args => this.aiAnalyzer.threatAssessment(args),
     'ai-explain': args => this.aiAnalyzer.explainVulnerability(args),
-    'setup-api': args => this.aiAnalyzer.setup(args),
-    'switch-provider': args => this.aiAnalyzer.setProvider(args),
+    'setup-api': args => this.aiAnalyzer.setupAPI(args),
+    'switch-provider': args => this.aiAnalyzer.switchProvider(args),
     
     // CVE & Security Database commands
     'search-cve': args => this.cveDatabase.searchCVE(args),
@@ -55,6 +66,12 @@ const SecAgent = function() {
     'test-collection': args => this.apiTester.testCollection(args),
     'export-report': args => this.apiTester.exportReport(args),
     
+    // Code Refactoring commands
+    'refactor-file': args => this.codeRefactor.refactorFile(args),
+    'refactor-project': args => this.codeRefactor.refactorProject(args),
+    'analyze-refactor': args => this.codeRefactor.analyzeCode(args),
+    'compare-refactor': args => this.codeRefactor.compareVersions(args),
+    
     // Utility commands
     'help': () => this.showHelp(),
     'exit': () => {
@@ -64,20 +81,24 @@ const SecAgent = function() {
   };
 }
 
-SecAgent.prototype.start = function() {
-  console.log('\nSecurity AI Agent v2.2');
-  console.log('========================================');
-  console.log('* AI Provider:', this.aiAnalyzer.getProvider(), this.aiAnalyzer.configure() ? '✅' : '❌');
-  console.log('* Traffic Monitor: Ready');
-  console.log('* Security Scanner: Ready');
-  console.log('* API Tester: Ready');
-  console.log('* CVE Database: Ready');
-  console.log('\nType "help" for available commands\n');
+SecurityAgent.prototype.start = function() {
+  // ANSI color codes
+  const c = this.colors;  
+
+  console.log('\n' + c.bright + c.red + 'FEAR AI Security & Development Agent v1.0.1' + c.reset);
+  console.log(c.cyan + '=======================================================' + c.reset);
+  console.log(c.yellow + 'AI Provider:' + c.reset, this.aiAnalyzer.getProvider(), this.aiAnalyzer.configure() ? c.green + 'READY' + c.reset : c.red + 'NOT CONFIGURED' + c.reset);
+  console.log(c.yellow + 'Traffic Monitor:' + c.reset, c.green + 'Ready' + c.reset);
+  console.log(c.yellow + 'Security Scanner:' + c.reset, c.green + 'Ready' + c.reset);
+  console.log(c.yellow + 'API Tester:' + c.reset, c.green + 'Ready' + c.reset);
+  console.log(c.yellow + 'CVE Database:' + c.reset, c.green + 'Ready' + c.reset);
+  console.log(c.yellow + 'Code Refactor:' + c.reset, c.green + 'Ready' + c.reset);
+  console.log('\n' + c.magenta + 'Type "help" for available commands' + c.reset + '\n');
   
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: '🤖 agent> '
+    prompt: c.bright + c.cyan + 'FEAR >> ' + c.reset
   });
 
   rl.prompt();
@@ -95,57 +116,58 @@ SecAgent.prototype.start = function() {
       Promise.resolve()
         .then(() => this.commands[cmd](args))
         .catch(err => {
-          console.error(`❌ Error: ${err.message}`);
+          console.error(c.red + 'Error: ' + err.message + c.reset);
           if (err.stack && process.env.DEBUG) {
             console.error(err.stack);
           }
         })
         .then(() => rl.prompt());
     } else {
-      console.log(`❌ Unknown command: ${cmd}. Type "help" for available commands.`);
+      console.log(c.red + 'Unknown command: ' + cmd + '. Type "help" for available commands.' + c.reset);
       rl.prompt();
     }
   });
 
   rl.on('close', () => {
     this.trafficMonitor.stopMonitoring();
-    console.log('\n👋 Goodbye!');
+    console.log('\n' + c.cyan + 'Goodbye!' + c.reset);
     process.exit(0);
   });
   
   return Promise.resolve();
 };
 
-SecAgent.prototype.showHelp = function() {
+SecurityAgent.prototype.showHelp = function() {
+  const c = this.colors;
   console.log(`
-╔════════════════════════════════════════════════════════════════╗
-║           Security AI Agent - Command Reference                ║
-╚════════════════════════════════════════════════════════════════╝
+` + c.magenta + `==========================================================` + c.reset + `
+` + c.magenta + `#           Security AI Agent - Command Reference        #` + c.reset + `
+` + c.magenta + `==========================================================` + c.reset + `
 
-📡 NETWORK SCANNING
+NETWORK SCANNING
   scan-ports [host] [start] [end]  - Scan ports (default: localhost 1-1024)
   network-info                     - Display network interfaces
   check-deps [dir]                 - Analyze package.json dependencies
   security-audit [dir]             - Run security audit on project
 
-🔍 CODE ANALYSIS
+CODE ANALYSIS
   analyze-code <file>              - Scan file for vulnerabilities
   analyze-project [dir]            - Scan entire project directory
   
-📊 TRAFFIC MONITORING
+TRAFFIC MONITORING
   monitor-traffic [interface]      - Start real-time traffic monitoring
   stop-monitor                     - Stop traffic monitoring
   traffic-stats                    - Show traffic statistics
   export-traffic <file>            - Export traffic data to JSON
 
-🤖 AI FEATURES
+AI FEATURES
   setup-api <provider> <key>       - Configure AI (anthropic/openai)
   switch-provider <provider>       - Switch between AI providers
   ai-analyze <file>                - Deep AI analysis of code
   ai-threat [description]          - AI threat assessment
   ai-explain <vulnerability>       - Explain security issue
 
-🗄️  CVE & SECURITY DATABASES
+CVE & SECURITY DATABASES
   search-cve <keyword|CVE-ID>      - Search CVE database
   check-cwe <CWE-ID>               - Get CWE details
   check-package <name> [version]   - Check package vulnerabilities
@@ -153,12 +175,21 @@ SecAgent.prototype.showHelp = function() {
   scan-deps [directory]            - Scan dependencies for CVEs
   export-cve [filename]            - Export CVE report
 
-🌐 API TESTING
+API TESTING
   test-endpoint <url> [method]     - Test API endpoint security
   test-collection <json-file>      - Test multiple endpoints
   export-report [filename]         - Export test results
 
-⚙️  UTILITY
+CODE REFACTORING
+  refactor-file <file> [pattern]   - Refactor JavaScript file
+  refactor-project [dir] [pattern] - Refactor entire project
+  analyze-refactor <file>          - Analyze code for refactoring
+  compare-refactor <orig> <new>    - Compare refactored versions
+  
+  Patterns: class-to-function, async-to-promise, arrow-functions,
+            use-this, modernize (default)
+
+ UTILITY
   help                             - Show this help message
   exit                             - Exit the agent
 
@@ -172,6 +203,8 @@ EXAMPLES:
   check-package express
   ai-analyze app.js
   test-endpoint https://api.example.com/users GET
+  refactor-file app.js modernize
+  analyze-refactor server.js
 
 ENVIRONMENT:
   ANTHROPIC_API_KEY - Set API key for Anthropic Claude
@@ -182,9 +215,4 @@ ENVIRONMENT:
   return Promise.resolve();
 };
 
-// Start the agent
-if (require.main === module) {
-
-}
-
-module.exports = SecAgent;
+module.exports = SecurityAgent;

@@ -1,9 +1,8 @@
-const SecAgent = require("./src/agent");
+const SecurityAgent = require("./src/agent");
 // Start the agent
 
-const agent = new SecAgent();
-
-agent.start().catch(err => {
+  const agent = new SecurityAgent();
+  agent.start().catch(err => {
     console.error('Fatal error:', err);
     process.exit(1);
-});
+  });
