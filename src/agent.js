@@ -17,7 +17,7 @@ const SecurityAgent = function() {
   // Module definitions with metadata
   this.definitions = [
     // Main Ai functionalizty 
-    { name: 'aiAnalyzer', file: './modules/ai/ai', displayName: 'AI Analyzer' },
+    { name: 'aiAnalyzer', file: './modules/ai/ai', displayName: 'FEAR - AI' },
     // Security modules
     { name: 'scanner', file: './modules/security/scanner', displayName: 'Security Scanner' },
     { name: 'trafficMonitor', file: './modules/security/monitor', displayName: 'Traffic Monitor' },
@@ -219,7 +219,7 @@ SecurityAgent.prototype = {
       minute: '2-digit' 
     });
     return colorizer.bright(colorizer.cyan('[' + timestamp + '] ')) + 
-           colorizer.bright(colorizer.green('agent> '));
+           colorizer.bright(colorizer.green('FEAR >> '));
   },
 
   executeCommand(input) {

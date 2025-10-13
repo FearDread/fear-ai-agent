@@ -97,6 +97,40 @@ ApiAnalyzer.prototype = {
 
   },
 
+  async testCollection(args) {
+    const filePath = args[0];
+
+    if (!filePath) {
+      console.log('Usage: test-collection <json-file>\n');
+      console.log('Example JSON format:');
+      console.log(JSON.stringify({
+        name: "API Test Collection",
+        endpoints: [
+          { url: "https://api.example.com/users", method: "GET" },
+          { url: "https://api.example.com/login", method: "POST" }
+        ]
+      }, null, 2));
+      console.log();
+      return;
+    }
+
+    await fs.readFile((filePath, 'utf8'))
+      .then((data) => {
+        const collection = JSON.parse(data);
+        console.log(`\nTesting API Collection: ${collection.name}`);
+        console.log(`===============================================`);
+        console.log(`Endpoints: ${collection.endpoints.length}\n`);
+
+        for (const endpoint of collection.endpoints) {
+          this.testEndpoint([endpoint.url, endpoint.method]).catch((err) => { });
+          this.sleep(1000);
+        }
+      })
+      .catch((err) => {
+        console.log(`Failed to load collection: ${err.message}\n`);
+      });
+  },
+
   async exportReport(args) {
     const filename = args[0] || `api-test-report-${Date.now()}.json`;
 
@@ -188,31 +222,31 @@ ApiAnalyzer.prototype = {
     const low = this.vulnerabilities.filter(v => v.severity === 'LOW');
 
     if (critical.length > 0) {
-      console.log('������ CRITICAL Vulnerabilities:');
+      console.log('CRITICAL Vulnerabilities:');
       critical.forEach(v => this.printVulnerability(v));
       console.log();
     }
 
     if (high.length > 0) {
-      console.log('������ HIGH Vulnerabilities:');
+      console.log('HIGH Vulnerabilities:');
       high.forEach(v => this.printVulnerability(v));
       console.log();
     }
 
     if (medium.length > 0) {
-      console.log('������ MEDIUM Vulnerabilities:');
+      console.log('MEDIUM Vulnerabilities:');
       medium.forEach(v => this.printVulnerability(v));
       console.log();
     }
 
     if (low.length > 0) {
-      console.log('������ LOW Vulnerabilities:');
+      console.log('LOW Vulnerabilities:');
       low.forEach(v => this.printVulnerability(v));
       console.log();
     }
 
     if (this.vulnerabilities.length === 0) {
-      console.log('✅ No vulnerabilities detected!\n');
+      console.log(colorizer.green('No vulnerabilities detected!\n'));
     }
 
     // Summary
@@ -289,7 +323,7 @@ ApiAnalyzer.prototype = {
     },
 
     async headers(url) {
-      console.log('������ Testing Security Headers...');
+      console.log('Testing Security Headers...');
 
       try {
         const response = await this.makeRequest(url, 'GET');
@@ -375,7 +409,7 @@ ApiAnalyzer.prototype = {
     },
 
     async limiting(url, method) {
-      console.log('⏱️  Testing Rate Limiting...');
+      console.log('Testing Rate Limiting...');
 
       try {
         const requests = 15;
@@ -504,42 +538,6 @@ ApiAnalyzer.prototype = {
 
       if (allowedMethods.length > 0) {
         this.addResult('INFO', 'Allowed Methods', `Methods: ${allowedMethods.join(', ')}`);
-      }
-    },
-
-    async collection(args) {
-      const filePath = args[0];
-
-      if (!filePath) {
-        console.log('Usage: test-collection <json-file>\n');
-        console.log('Example JSON format:');
-        console.log(JSON.stringify({
-          name: "API Test Collection",
-          endpoints: [
-            { url: "https://api.example.com/users", method: "GET" },
-            { url: "https://api.example.com/login", method: "POST" }
-          ]
-        }, null, 2));
-        console.log();
-        return;
-      }
-
-      try {
-        const data = await fs.readFile(filePath, 'utf8');
-        const collection = JSON.parse(data);
-
-        console.log(`\nTesting API Collection: ${collection.name}`);
-        console.log(`═══════════════════════════════════════`);
-        console.log(`Endpoints: ${collection.endpoints.length}\n`);
-
-        for (const endpoint of collection.endpoints) {
-          await this.testEndpoint([endpoint.url, endpoint.method]);
-          console.log('\n---\n');
-          await this.sleep(1000); // Delay between tests
-        }
-
-      } catch (err) {
-        console.log('Failed to load collection: ${err.message}\n`);
       }
     },
   },
