@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const colorizer = require('./modules/utils/colorizer');
 
-function SecurityAgent() {
+const SecurityAgent = function() {
   this.modules = {};
   this.commands = {};
   this.commandHistory = [];
@@ -15,7 +15,7 @@ function SecurityAgent() {
   this.maxHistory = 100;
   
   // Module definitions with metadata
-  this.moduleDefinitions = [
+  this.definitions = [
     // Main Ai functionalizty 
     { name: 'aiAnalyzer', file: './modules/ai/ai', displayName: 'AI Analyzer' },
     // Security modules
@@ -32,7 +32,7 @@ function SecurityAgent() {
   ];
   
   // Command to module mappings
-  this.commandMappings = {
+  this.mappings = {
     // Scanner commands
     'scan-ports': { module: 'scanner', method: 'scanPorts', description: 'Scan network ports' },
     'check-deps': { module: 'scanner', method: 'checkDependencies', description: 'Check dependencies' },
@@ -105,10 +105,11 @@ function SecurityAgent() {
 }
 
 SecurityAgent.prototype = {
+  
   loadModules() {
     console.log(colorizer.dim('Loading modules...'));
     
-    this.moduleDefinitions.forEach(moduleDef => {
+    this.definitions.forEach(moduleDef => {
       try {
         const ModuleClass = require(moduleDef.file);
         this.modules[moduleDef.name] = new ModuleClass();
@@ -122,7 +123,7 @@ SecurityAgent.prototype = {
   },
 
   registerCommands() {
-    Object.entries(this.commandMappings).forEach(([cmd, config]) => {
+    Object.entries(this.mappings).forEach(([cmd, config]) => {
       const module = this.modules[config.module];
       if (module && typeof module[config.method] === 'function') {
         this.commands[cmd] = args => module[config.method](args);
@@ -174,12 +175,12 @@ SecurityAgent.prototype = {
 
   showBanner() {
     const banner = [
-      '╔═══════════════════════════════════════════════════════════╗',
-      '║                                                           ║',
-      '║           FEAR SECURITY AI AGENT v2.3                     ║',
-      '║           Advanced Security Testing Framework             ║',
-      '║                                                           ║',
-      '╚═══════════════════════════════════════════════════════════╝'
+      '=============================================================',
+      '#                                                           #',
+      '#           FEAR SECURITY AI AGENT v1.0.3                   #',
+      '#           Advanced Security Testing Framework             #',
+      '#                                                           #',
+      '=============================================================',
     ];
     console.log(colorizer.header(this.logo));
     console.log(colorizer.bright(colorizer.cyan(banner.join('\n'))));
@@ -189,7 +190,7 @@ SecurityAgent.prototype = {
   showStatus() {
     console.log(colorizer.section('System Status'));
     
-    this.moduleDefinitions.forEach(moduleDef => {
+    this.definitions.forEach(moduleDef => {
       const module = this.modules[moduleDef.name];
       const status = module ? colorizer.green('[READY]') : colorizer.red('[UNAVAILABLE]');
       
@@ -310,7 +311,7 @@ SecurityAgent.prototype = {
     Object.entries(categories).forEach(([category, commands]) => {
       console.log(colorizer.section(category.toUpperCase()));
       commands.forEach(cmd => {
-        const config = this.commandMappings[cmd];
+        const config = this.mappings[cmd];
         const desc = config ? config.description : 'Show ' + cmd.replace('-', ' ');
         console.log(colorizer.bullet(cmd.padEnd(25) + ' - ' + desc));
       });
