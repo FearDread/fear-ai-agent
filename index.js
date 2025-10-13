@@ -1,5 +1,5 @@
 const SecurityAgent = require("./src/agent");
-const colorizer = require('./src/utils/colorizer');
+const colorizer = require('./src/modules/utils/colorizer');
 // Start the agent
 if (require.main === module) {
 
