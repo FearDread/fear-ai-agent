@@ -46,7 +46,8 @@ const SecurityAgent = function() {
     'ai-analyze': { module: 'aiAnalyzer', method: 'analyzeCode', description: 'AI code analysis' },
     'ai-threat': { module: 'aiAnalyzer', method: 'threatAssessment', description: 'AI threat assessment' },
     'ai-explain': { module: 'aiAnalyzer', method: 'explainVulnerability', description: 'AI explain vulnerability' },
-    'setup-api': { module: 'aiAnalyzer', method: 'setup', description: 'Configure AI API' },
+    'ai-setup': { module: 'aiAnalyzer', method: 'setup', description: 'Configure AI API' },
+    'ai-chat': { module: 'aiAnalyzer', method:'chat', description: 'Ask the AI'},
     'switch-provider': { module: 'aiAnalyzer', method: 'setProvider', description: 'Switch AI provider' },
     
     // CVE database commands
