@@ -1,7 +1,3 @@
-// agent.js - Main Security AI Agent
-// Install: npm install @anthropic-ai/sdk openai
-// Run: node agent.js
-
 const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
@@ -16,19 +12,16 @@ const SecurityAgent = function() {
   
   // Module definitions with metadata
   this.definitions = [
-    // Main Ai functionalizty 
-    { name: 'aiAnalyzer', file: './modules/ai/ai', displayName: 'FEAR - AI' },
-    // Security modules
     { name: 'scanner', file: './modules/security/scanner', displayName: 'Security Scanner' },
-    { name: 'trafficMonitor', file: './modules/security/monitor', displayName: 'Traffic Monitor' },
-    { name: 'cveDatabase', file: './modules/security/cve', displayName: 'CVE Database' },
     { name: 'webScraper', file: './modules/security/web', displayName: 'Web Scraper' },
     { name: 'vulnAssessment', file: './modules/security/vulnerability', displayName: 'Vuln Assessment' },
-    // Dev modules
+    { name: 'trafficMonitor', file: './modules/security/monitor', displayName: 'Traffic Monitor' },
+    { name: 'aiAnalyzer', file: './modules/ai/ai', displayName: 'AI Analyzer' },
     { name: 'codeAnalyzer', file: './modules/code/analyzer', displayName: 'Code Analyzer' },
-    { name: 'codeRefactor', file: './modules/code/refactor', displayName: 'Code Refactor' },
-    // Analisis Modules
     { name: 'apiTester', file: './modules/analyze/api', displayName: 'API Tester' },
+    { name: 'cveDatabase', file: './modules/security/cve', displayName: 'CVE Database' },
+    { name: 'codeRefactor', file: './modules/code/refactor', displayName: 'Code Refactor' },
+    { name: 'htmlToReact', file: './modules/code/react', displayName: 'HTML to React' }
   ];
   
   // Command to module mappings
@@ -53,8 +46,8 @@ const SecurityAgent = function() {
     'ai-analyze': { module: 'aiAnalyzer', method: 'analyzeCode', description: 'AI code analysis' },
     'ai-threat': { module: 'aiAnalyzer', method: 'threatAssessment', description: 'AI threat assessment' },
     'ai-explain': { module: 'aiAnalyzer', method: 'explainVulnerability', description: 'AI explain vulnerability' },
-    'ai-setup': { module: 'aiAnalyzer', method: 'setup', description: 'Configure AI API' },
-    'ai-provider': { module: 'aiAnalyzer', method: 'setProvider', description: 'Set AI provider' },
+    'setup-api': { module: 'aiAnalyzer', method: 'setup', description: 'Configure AI API' },
+    'switch-provider': { module: 'aiAnalyzer', method: 'setProvider', description: 'Switch AI provider' },
     
     // CVE database commands
     'search-cve': { module: 'cveDatabase', method: 'searchCVE', description: 'Search CVE database' },
@@ -84,11 +77,17 @@ const SecurityAgent = function() {
     
     // Vulnerability assessment commands
     'vuln-assess': { module: 'vulnAssessment', method: 'assess', description: 'Run vulnerability assessment' },
-    'export-vuln': { module: 'vulnAssessment', method: 'exportResults', description: 'Export vulnerability results' }
+    'export-vuln': { module: 'vulnAssessment', method: 'exportResults', description: 'Export vulnerability results' },
+    
+    // HTML to React commands
+    'html-to-react': { module: 'htmlToReact', method: 'convert', description: 'Convert HTML to React' },
+    'batch-convert': { module: 'htmlToReact', method: 'convertBatch', description: 'Batch convert HTML files' },
+    'analyze-html': { module: 'htmlToReact', method: 'analyzeHTML', description: 'Analyze HTML structure' }
   };
   
   this.loadModules();
   this.registerCommands();
+
   this.logo = `
                                         
 @@@@@@@@  @@@@@@@@   @@@@@@   @@@@@@@   
@@ -102,6 +101,7 @@ const SecurityAgent = function() {
  ::        :: ::::  ::   :::  ::   :::  
  :        : :: ::    :   : :   :   : :                                                                                                                                                          
 `;
+
 }
 
 SecurityAgent.prototype = {
@@ -135,6 +135,7 @@ SecurityAgent.prototype = {
     this.commands['status'] = () => this.showStatus();
     this.commands['history'] = () => this.showHistory();
     this.commands['clear'] = () => this.clearScreen();
+    this.commands['banner'] = () => this.showBanner();
     this.commands['version'] = () => this.showVersion();
     this.commands['exit'] = () => this.exit();
   },
@@ -174,14 +175,16 @@ SecurityAgent.prototype = {
   },
 
   showBanner() {
+    
     const banner = [
       '=============================================================',
-      '#                                                           #',
-      '#           FEAR SECURITY AI AGENT v1.0.3                   #',
-      '#           Advanced Security Testing Framework             #',
-      '#                                                           #',
+      '║                                                           ║',
+      '║           SECURITY AI AGENT v2.3                          ║',
+      '║           Advanced Security Testing Framework             ║',
+      '║                                                           ║',
       '=============================================================',
     ];
+    
     console.log(colorizer.header(this.logo));
     console.log(colorizer.bright(colorizer.cyan(banner.join('\n'))));
     console.log();
@@ -299,12 +302,13 @@ SecurityAgent.prototype = {
       'Network Scanning': ['scan-ports', 'network-info', 'check-deps', 'security-audit'],
       'Code Analysis': ['analyze-code', 'analyze-project'],
       'Traffic Monitoring': ['monitor-traffic', 'stop-monitor', 'traffic-stats', 'export-traffic'],
-      'AI Features': ['ai-setup', 'ai-provider', 'ai-analyze', 'ai-threat', 'ai-explain'],
+      'AI Features': ['setup-api', 'switch-provider', 'ai-analyze', 'ai-threat', 'ai-explain'],
       'CVE & Security': ['search-cve', 'check-cwe', 'check-package', 'check-exploits', 'scan-deps', 'export-cve'],
       'API Testing': ['test-endpoint', 'test-collection', 'export-report'],
       'Code Refactoring': ['refactor-file', 'refactor-project', 'analyze-refactor', 'compare-refactor'],
       'Web Scraping': ['scrape', 'scrape-links', 'scrape-images', 'export-scrape', 'analyze-headers'],
       'Vulnerability Assessment': ['vuln-assess', 'export-vuln'],
+      'HTML to React': ['html-to-react', 'batch-convert', 'analyze-html'],
       'System': ['help', 'status', 'history', 'version', 'clear', 'exit']
     };
 
@@ -340,5 +344,6 @@ SecurityAgent.prototype = {
     process.exit(0);
   }
 };
+
 
 module.exports = SecurityAgent;
