@@ -16,10 +16,12 @@ const SecurityAgent = function() {
     { name: 'webScraper', file: './modules/security/web', displayName: 'Web Scraper' },
     { name: 'vulnAssessment', file: './modules/security/vulnerability', displayName: 'Vuln Assessment' },
     { name: 'trafficMonitor', file: './modules/security/monitor', displayName: 'Traffic Monitor' },
+    { name: 'cveDatabase', file: './modules/security/cve', displayName: 'CVE Database' },
+
     { name: 'aiAnalyzer', file: './modules/ai/ai', displayName: 'AI Analyzer' },
     { name: 'codeAnalyzer', file: './modules/code/analyzer', displayName: 'Code Analyzer' },
     { name: 'apiTester', file: './modules/analyze/api', displayName: 'API Tester' },
-    { name: 'cveDatabase', file: './modules/security/cve', displayName: 'CVE Database' },
+
     { name: 'codeRefactor', file: './modules/code/refactor', displayName: 'Code Refactor' },
     { name: 'htmlToReact', file: './modules/code/react', displayName: 'HTML to React' }
   ];
@@ -142,7 +144,7 @@ SecurityAgent.prototype = {
   },
 
   start() {
-    this.clearScreen();
+    //this.clearScreen();
     this.showBanner();
     this.showStatus();
     
@@ -303,14 +305,14 @@ SecurityAgent.prototype = {
       'Network Scanning': ['scan-ports', 'network-info', 'check-deps', 'security-audit'],
       'Code Analysis': ['analyze-code', 'analyze-project'],
       'Traffic Monitoring': ['monitor-traffic', 'stop-monitor', 'traffic-stats', 'export-traffic'],
-      'AI Features': ['setup-api', 'switch-provider', 'ai-analyze', 'ai-threat', 'ai-explain'],
+      'AI Features': ['ai-setup', 'switch-provider', 'ai-analyze', 'ai-threat', 'ai-explain', 'ai-chat'],
       'CVE & Security': ['search-cve', 'check-cwe', 'check-package', 'check-exploits', 'scan-deps', 'export-cve'],
       'API Testing': ['test-endpoint', 'test-collection', 'export-report'],
       'Code Refactoring': ['refactor-file', 'refactor-project', 'analyze-refactor', 'compare-refactor'],
       'Web Scraping': ['scrape', 'scrape-links', 'scrape-images', 'export-scrape', 'analyze-headers'],
       'Vulnerability Assessment': ['vuln-assess', 'export-vuln'],
       'HTML to React': ['html-to-react', 'batch-convert', 'analyze-html'],
-      'System': ['help', 'status', 'history', 'version', 'clear', 'exit']
+      'System': ['help', 'status', 'history', 'banner', 'version', 'clear', 'exit']
     };
 
     Object.entries(categories).forEach(([category, commands]) => {
@@ -318,11 +320,16 @@ SecurityAgent.prototype = {
       commands.forEach(cmd => {
         const config = this.mappings[cmd];
         const desc = config ? config.description : 'Show ' + cmd.replace('-', ' ');
-        console.log(colorizer.bullet(cmd.padEnd(25) + ' - ' + desc));
+        
+        console.log(colorizer.bullet(cmd.padEnd(25) + ' - ' + colorizer.yellow(desc)));
       });
     });
 
-    console.log(colorizer.section('TIPS'));
+    return Promise.resolve();
+  },
+
+  showTips() {
+    console.log(colorizer.blue('TIPS'));
     console.log(colorizer.dim('  • Press TAB for command autocomplete'));
     console.log(colorizer.dim('  • Use arrow keys to navigate history'));
     console.log(colorizer.dim('  • Type command name without args for usage info'));

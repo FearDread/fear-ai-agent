@@ -13,14 +13,15 @@ const AIConfig = function () {
   // API keys
   this.anthropicKey = process.env.ANTHROPIC_API_KEY || '';
   this.openaiKey = process.env.OPENAI_API_KEY || '';
-  this.googleKey = process.env.GOOGLE_CLOUD_API_KEY,
+  this.googleKey = process.env.GOOGLE_API_KEY,
     // Current provider
     this.provider = process.env.AI_PROVIDER || 'openai';
 
   // Model configurations
   this.models = {
-    anthropic: 'claude-sonnet-4-5-20250929',
     openai: 'gpt-5',
+    anthropic: 'claude-sonnet-4-5-20250929',
+
     google: 'gemini-2.5-flash-preview-09-2025'
   };
 
@@ -84,7 +85,7 @@ AIConfig.prototype = {
 
       case 'google':
         return this.setupGoogle(key);
-      
+
       default:
         console.log(colorizer.error('Unknown provider. Use "anthropic", "openai", or "google"\n'));
         return Promise.resolve();
@@ -153,6 +154,8 @@ AIConfig.prototype = {
     console.log(colorizer.dim('    Model: ' + this.models.anthropic));
     console.log(colorizer.bullet('openai    - OpenAI GPT'));
     console.log(colorizer.dim('    Model: ' + this.models.openai));
+    console.log(colorizer.bullet('google    - Google Gemeni AI'));
+    console.log(colorizer.dim('    Model: ' + this.models.google));
     console.log();
 
     console.log(colorizer.section('Examples'));
