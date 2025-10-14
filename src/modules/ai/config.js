@@ -209,7 +209,7 @@ AIConfig.prototype = {
     console.log();
 
     console.log(colorizer.section('Current Provider'));
-    console.log(colorizer.cyan('  Active: ') + colorizer.bright(this.getProviderName()));
+    console.log(colorizer.cyan('  Active: ') + colorizer.bright(this.provider));
     console.log();
 
     console.log(colorizer.section('Available Providers'));
@@ -223,7 +223,7 @@ AIConfig.prototype = {
   },
 
   isConfigured() {
-    return this.provider === 'openai' ? !!this.openai : !!this.anthropic;
+    return this.configured = this.openai || this.anthropic || this.googleAi
   },
 
   getProviderName() {
