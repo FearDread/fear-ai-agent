@@ -1,465 +1,65 @@
-// modules/ai-analyzer.js - AI-Powered Security Analysis (OpenAI + Anthropic)
-const fs = require('fs').promises;
-const OpenAI = require('openai');
-const Anthropic = require('@anthropic-ai/sdk');
+// modules/ai/ai.js - Main AI Module (Combines Config & Operations)
+const AIConfig = require('./config');
+const AIOperations = require('./operations');
 
-const AiAnalyzer = function () {
-  // Anthropic setup
-  this.anthropicKey = process.env.ANTHROPIC_API_KEY || '';
-  this.anthropic = null;
-  if (this.anthropicKey) {
-    try {
-      const Anthropic = require('@anthropic-ai/sdk');
-      this.anthropic = new Anthropic({ apiKey: this.anthropicKey });
-    } catch (err) {
-      // Anthropic SDK not installed
-    }
-  }
-
-  // OpenAI setup
-    this.openai = null;
-  this.openaiKey = process.env.OPENAI_API_KEY || '';
-  if (this.openaikey) {
-  this.openai = new OpenAI({ apiKey: this.openaiKey });
-  }
-
-  this.provider = process.env.AI_PROVIDER || 'anthropic';
-  this.anthropicModel = 'claude-sonnet-4-5-20250929';
-  this.openaiModel = 'gpt-4-turbo-preview';
-
-
-  this.prompt = `
-You are an advanced personal assistant AI specializing in hacking techniques and Node.js development. Your task is to provide comprehensive guidance, best practices, and relevant code snippets for users who are looking to enhance their skills in these areas. 
-
-1. **Understand User Intent**: Identify the specific needs of the user, whether they are looking for hacking methodologies (ethical hacking, penetration testing, etc.) or Node.js development practices (frameworks, libraries, code optimization, etc.).
-
-2. **Provide Contextual Information**: Offer a brief introduction to the topic at hand, including its relevance in today's tech landscape. For hacking, explain concepts like cybersecurity risks and ethical considerations. For Node.js, describe its advantages for server-side development.
-
-3. **Structured Guidance**: Break down your response into clear sections:
-   - **Key Concepts**: Define important terms and methodologies in hacking and Node.js.
-   - **Step-by-Step Instructions**: Provide a clear, step-by-step guide for tasks such as setting up a Node.js environment or executing basic hacking techniques.
-   - **Code Examples**: Include relevant code snippets with explanations, especially for Node.js applications, demonstrating how to implement specific features or functionalities.
-
-4. **Resources and Tools**: Recommend tools, libraries, and frameworks that can assist users in both hacking and Node.js development. Include links to official documentation, tutorials, and communities where they can seek further support.
-
-5. **Best Practices**: Share industry best practices for both ethical hacking and Node.js development, emphasizing security measures, code quality, and maintainability.
-
-6. **Encourage Learning**: Motivate users to engage in continuous learning by suggesting online courses, certifications, and books that cover advanced topics in hacking and Node.js.
-
-7. **Safety and Ethics**: Stress the importance of ethical considerations in hacking and responsible software development to ensure that users understand the implications of their work.
-
-Your response should be informative, actionable, and tailored to empower the user with the knowledge they need to succeed in hacking and Node.js development `
-  // return this;
-}
+const AiAnalyzer = function() {
+  // Initialize configuration
+  this.config = new AIConfig();
+  
+  // Initialize operations with config reference
+  this.operations = new AIOperations(this.config);
+};
 
 AiAnalyzer.prototype = {
-
+  // Configuration methods
   setup(args) {
-
-    const provider = args[0].toLowerCase();
-    const key = args[1];
-
-    if (args.length === 0) {
-      console.log('AI API Configuration');
-      console.log('═══════════════════════════════════════');
-      console.log('Usage: setup-api <provider> <api-key>');
-      console.log('\nProviders:');
-      console.log('anthropic - Anthropic Claude');
-      console.log('openai    - OpenAI GPT\n');
-      console.log('Examples:');
-      console.log('setup-api anthropic sk-ant-your-key-here');
-      console.log('setup-api openai sk-your-openai-key-here\n');
-      console.log('Or set environment variables:');
-      console.log('export ANTHROPIC_API_KEY=your-key');
-      console.log('export OPENAI_API_KEY=your-key');
-      console.log('export AI_PROVIDER=anthropic|openai\n');
-      console.log('Current provider:', this.getProvider());
-      console.log('Status:', this.configure() ? 'Configured' : 'Not configured\n');
-
-      return Promise.resolve();
-    }
-
-
-    if (!key) {
-      console.log('Please provide an API key\n');
-      return Promise.resolve();
-    }
-
-    if (provider === 'anthropic') {
-      this.anthropicKey = key;
-      this.anthropic = new Anthropic({ apiKey: key });
-      this.provider = 'anthropic';
-      console.log('Anthropic Claude configured successfully!\n');
-
-    } else if (provider === 'openai') {
-
-      this.openaiKey = key;
-      this.openai = new OpenAI({ apiKey: key });
-      this.provider = 'openai';
-      console.log('OpenAI configured successfully!\n');
-
-    } else {
-      console.log('Unknown provider. Use "anthropic" or "openai"\n');
-    }
-
-    return Promise.resolve();
-  },
-
-  configure() {
-    return this.provider === 'openai' ? !!this.openai : !!this.anthropic;
-  },
-
-  getProvider() {
-    return this.provider === 'openai' ? 'OpenAI' : 'Anthropic Claude';;
+    return this.config.setup(args);
   },
 
   setProvider(args) {
-    const provider = args[0]?.toLowerCase();
-
-    if (!provider) {
-      console.log('\n📝 Switch AI Provider');
-      console.log('═══════════════════════════════════════');
-      console.log('Usage: switch-provider <anthropic|openai>\n');
-      console.log('Current provider:', this.getProviderName());
-      console.log('Anthropic:', this.anthropic ? '✅ Available' : '❌ Not configured');
-      console.log('OpenAI:', this.openai ? '✅ Available' : '❌ Not configured\n');
-      return Promise.resolve();
-    }
-
-    if (provider === 'anthropic' && this.anthropic) {
-      this.provider = 'anthropic';
-      console.log('✅ Switched to Anthropic Claude\n');
-    } else if (provider === 'openai' && this.openai) {
-      this.provider = 'openai';
-      console.log('✅ Switched to OpenAI GPT\n');
-    } else {
-      console.log(`❌ ${provider} is not configured. Use setup-api first.\n`);
-    }
-
-    return Promise.resolve();
+    return this.config.setProvider(args);
   },
 
-  async generateNodeCode(prompt) {
-    console.log('generate prompt = ', prompt);
-  const response = await this.openai.chat.completions.create({
-    model: "gpt-4o", // or "gpt-4" / "gpt-3.5-turbo"
-    messages: [
-      {
-        role: "system",
-        content: "You are an advanced personal assistant AI specializing in hacking techniques and Node.js development. Your task is to provide comprehensive guidance, best practices, and relevant code snippets for users who are looking to enhance their skills in these areas.",
-      },
-      {
-        role: "user",
-        content: `Write Node.js code for the following task:\n\n${prompt}`,
-      },
-    ],
-    temperature: 0.2, // lower for more predictable code
-  });
-
-  const code = response.choices[0].message.content.trim();
-  console.log('node code resp = ', response);
-  return code;
+  isConfigured() {
+    return this.config.isConfigured();
   },
 
+  getProviderName() {
+    return this.config.getProviderName();
+  },
+
+  // Operation methods
   analyzeCode(args) {
-    if (!this.configure()) {
-      console.log('AI not configured. Use "setup-api <provider> <key>" first.\n');
-      return Promise.resolve();
-    }
-
-    const filePath = args[0];
-    if (!filePath) {
-      console.log('Usage: ai-analyze <file-path>\n');
-      return Promise.resolve();
-    }
-
-    return fs.readFile(filePath, 'utf8')
-      .then(code => {
-        console.log('\nAI Security Analysis');
-        console.log('═══════════════════════════════════════');
-        console.log(`File: ${filePath}`);
-        console.log(`Provider: ${this.getProvider()}`);
-        console.log('Analyzing...\n');
-
-        const prompt = `You are a senior security engineer conducting a code security audit. Analyze this code for security vulnerabilities, best practices violations, and potential issues.
-
-File: ${filePath}
-
-\`\`\`
-${code}
-\`\`\`
-
-Provide:
-1. Security vulnerabilities (CRITICAL, HIGH, MEDIUM, LOW)
-2. Specific line numbers or code sections with issues
-3. Explanation of each vulnerability
-4. Recommended fixes
-5. General security recommendations
-
-Be thorough but concise. Focus on actionable findings.`;
-
-        if (this.provider === 'openai') {
-          return this.call.openApi(prompt);
-        } else {
-          return this.call.anthropic(prompt);
-        }
-      })
-      .then(response => {
-        console.log(response);
-        console.log('\n═══════════════════════════════════════\n');
-      })
-      .catch(err => {
-        console.log(`AI analysis failed: ${err.message}\n`);
-      });
+    return this.operations.analyzeCode(args);
   },
 
   threatAssessment(args) {
-    if (!this.configure()) {
-      console.log('AI not configured. Use "setup-api <provider> <key>" first.\n');
-      return Promise.resolve();
-    }
-
-    const description = args.join(' ');
-    if (!description) {
-      console.log('❌ Usage: ai-threat <threat description>\n');
-      console.log('Example: ai-threat SQL injection in user login form\n');
-      return Promise.resolve();
-    }
-
-    console.log('\nAI Threat Assessment');
-    console.log('═══════════════════════════════════════');
-    console.log(`Query: ${description}`);
-    console.log(`Provider: ${this.getProvider()}\n`);
-    console.log('Analyzing...\n');
-
-    const prompt = `You are a cybersecurity expert. Provide a comprehensive threat assessment for the following security concern:
-
-"${description}"
-
-Include:
-1. Threat Overview - What is this vulnerability/threat?
-2. Severity Level - Critical/High/Medium/Low with justification
-3. Attack Vectors - How could this be exploited?
-4. Potential Impact - What damage could occur?
-5. Mitigation Steps - Specific actions to prevent/fix
-6. Detection Methods - How to identify if you're vulnerable
-7. Real-world Examples - Brief examples if relevant
-
-Be practical and actionable.`;
-
-    const callPromise = this.provider === 'openai'
-      ? this.call.openApi(prompt)
-      : this.call.anthropic(prompt);
-
-    return callPromise
-      .then(response => {
-        console.log(response);
-        console.log('\n═══════════════════════════════════════\n');
-      })
-      .catch(err => {
-        console.log(`❌ Threat assessment failed: ${err.message}\n`);
-      });
+    return this.operations.threatAssessment(args);
   },
 
   explainVulnerability(args) {
-    if (!this.configure()) {
-      console.log('❌ AI not configured. Use "setup-api <provider> <key>" first.\n');
-      return Promise.resolve();
-    }
+    return this.operations.explainVulnerability(args);
+  },
 
-    const vulnerability = args.join(' ');
-    if (!vulnerability) {
-      console.log('❌ Usage: ai-explain <vulnerability or CWE>\n');
-      console.log('Example: ai-explain CWE-79\n');
-      console.log('Example: ai-explain XSS vulnerability\n');
-      return Promise.resolve();
-    }
-
-    console.log('\n🤖 AI Vulnerability Explanation');
-    console.log('═══════════════════════════════════════');
-    console.log(`Topic: ${vulnerability}`);
-    console.log(`Provider: ${this.getProviderName()}\n`);
-    console.log('Generating explanation...\n');
-
-    const prompt = `Explain the following security vulnerability or concept in a clear, educational way:
-
-"${vulnerability}"
-
-Structure your explanation with:
-1. Definition - What is it?
-2. How it works - Technical explanation
-3. Why it's dangerous - Potential consequences
-4. Common scenarios - Where it appears
-5. Prevention - How to avoid it
-6. Code examples - Show vulnerable vs secure code if applicable
-
-Keep it educational but accessible.`;
-
-    const callPromise = this.provider === 'openai'
-      ? this.call.openAi(prompt)
-      : this.call.anthropic(prompt);
-
-    return callPromise
-      .then(response => {
-        console.log(response);
-        console.log('\n═══════════════════════════════════════\n');
-      })
-      .catch(err => {
-        console.log(`❌ Explanation failed: ${err.message}\n`);
-      });
+  generateNodeCode(args) {
+    return this.operations.generateNodeCode(args);
   },
 
   analyzeTrafficPattern(trafficData) {
-    if (!this.configure()) {
-      return Promise.resolve(null);
-    }
-
-    const prompt = `Analyze this network traffic pattern for security concerns:
-
-${JSON.stringify(trafficData, null, 2)}
-
-Identify:
-1. Suspicious patterns
-2. Potential attacks (DDoS, port scanning, etc.)
-3. Anomalies
-4. Recommendations
-
-Be concise and security-focused.`;
-
-    const callPromise = this.provider === 'openai'
-      ? this.call.openAi(prompt, 2048)
-      : this.call.anthropic(prompt, 2048);
-
-    return callPromise.catch(err => {
-      console.error(`AI traffic analysis failed: ${err.message}`);
-      return null;
-    });
+    return this.operations.analyzeTrafficPattern(trafficData);
   },
 
-  compareCodeVersions(file1Path, file2Path) {
-    if (!this.configure()) {
-      console.log('❌ AI not configured. Use "setup-api <provider> <key>" first.\n');
-      return Promise.resolve();
-    }
-
-    return Promise.all([
-      fs.readFile(file1Path, 'utf8'),
-      fs.readFile(file2Path, 'utf8')
-    ])
-      .then(([code1, code2]) => {
-        console.log('\n🤖 AI Code Security Comparison');
-        console.log('═══════════════════════════════════════');
-        console.log(`Provider: ${this.getProviderName()}`);
-        console.log('Analyzing security implications of changes...\n');
-
-        const prompt = `Compare these two code versions from a security perspective:
-
-Original (${file1Path}):
-\`\`\`
-${code1}
-\`\`\`
-
-Modified (${file2Path}):
-\`\`\`
-${code2}
-\`\`\`
-
-Analyze:
-1. New vulnerabilities introduced
-2. Security improvements made
-3. Security regressions
-4. Overall security impact assessment
-
-Focus only on security-relevant changes.`;
-
-        return this.provider === 'openai'
-          ? this.call.openAi(prompt, 3072)
-          : this.call.anthropic(prompt, 3072);
-      })
-      .then(response => {
-        console.log(response);
-        console.log('\n═══════════════════════════════════════\n');
-      })
-      .catch(err => {
-        console.log(`❌ Comparison failed: ${err.message}\n`);
-      });
+  compareCodeVersions(args) {
+    return this.operations.compareCodeVersions(args);
   },
 
-  suggestImprovements(projectPath) {
-    if (!this.configure()) {
-      console.log('❌ AI not configured. Use "setup-api <provider> <key>" first.\n');
-      return Promise.resolve();
-    }
-
-    const pkgPath = `${projectPath}/package.json`;
-
-    return fs.readFile(pkgPath, 'utf8')
-      .catch(() => '')
-      .then(pkg => {
-        const projectInfo = pkg ? `Package.json:\n${pkg}\n\n` : '';
-
-        console.log('\n🤖 AI Security Recommendations');
-        console.log('═══════════════════════════════════════');
-        console.log(`Provider: ${this.getProviderName()}`);
-        console.log('Generating security improvement plan...\n');
-
-        const prompt = `As a security consultant, provide a comprehensive security improvement plan for this project:
-
-${projectInfo}
-
-Provide:
-1. Quick wins - Easy security improvements
-2. Critical priorities - Must-fix issues
-3. Best practices - Security measures to implement
-4. Tools to integrate - Security scanning, monitoring, etc.
-5. Development workflow improvements
-6. Long-term security strategy
-
-Be practical and prioritized.`;
-
-        return this.provider === 'openai'
-          ? this.call.openAi(prompt, 3072)
-          : this.call.anthropic(prompt, 3072);
-      })
-      .then(response => {
-        console.log(response);
-        console.log('\n═══════════════════════════════════════\n');
-      })
-      .catch(err => {
-        console.log(`❌ Recommendations failed: ${err.message}\n`);
-      });
+  suggestImprovements(args) {
+    return this.operations.suggestImprovements(args);
   },
 
-
-
-  call: {
-    openApi(prompt, maxTokens = 4096) {
-      return this.openai.chat.completions.create({
-        model: this.openaiModel,
-        max_tokens: maxTokens,
-        messages: [{
-          role: 'system',
-          content: 'You are an expert cybersecurity analyst and consultant.'
-        }, {
-          role: 'user',
-          content: prompt
-        }]
-      }).then(completion => completion.choices[0].message.content);
-    },
-
-    anthropic(prompt, maxTokens = 4096) {
-      return this.anthropic.messages.create({
-        model: this.anthropicModel,
-        max_tokens: maxTokens,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      }).then(message => message.content[0].text);
-    }
-
-  },
-
-}
+  chat(args) {
+    return this.operations.chat(args);
+  }
+};
 
 module.exports = AiAnalyzer;
