@@ -1,24 +1,34 @@
-// modules/ai/operations.js - AI Operations & Security Analysis
+// modules/ai/operations.js - Enhanced AI Operations & Security Analysis
 const fs = require('fs').promises;
+const path = require('path');
 const colorizer = require('../utils/colorizer');
+const readline = require('readline');
 
 const AIOperations = function (config) {
     this.config = config;
+    this.conversationHistory = [];
+    this.maxHistoryLength = 20;
 
-    this.systemPrompt = `
-        You are an advanced personal assistant AI specializing in security analysis, hacking techniques, and Node.js development. 
+    this.systemPrompt = `You are an advanced AI assistant specializing in:
+- Security analysis and vulnerability assessment
+- Cybersecurity best practices and threat modeling
+- Node.js development and architecture
+- Code review and optimization
+- Web application security (OWASP Top 10)
+- Penetration testing concepts and methodologies
 
-        Your responsibilities:
-        1. Provide comprehensive security guidance and code analysis
-        2. Identify vulnerabilities and recommend fixes
-        3. Explain security concepts clearly
-        4. Share best practices for secure development
-        5. Emphasize ethical considerations and responsible disclosure
+Your communication style:
+- Clear, concise, and actionable responses
+- Technical depth appropriate to the question
+- Security-focused perspective
+- Practical examples and code snippets when helpful
+- Emphasis on ethical practices and responsible disclosure
 
-        Always be thorough, actionable, and security-focused in your responses.`;
+Always provide comprehensive, accurate, and helpful information.`;
 };
 
 AIOperations.prototype = {
+
     analyzeCode(args) {
         if (!this.config.isConfigured()) {
             console.log(colorizer.error('AI not configured. Use "ai-setup <provider> <key>" first.\n'));
@@ -27,7 +37,8 @@ AIOperations.prototype = {
 
         const filePath = args[0];
         if (!filePath) {
-            console.log(colorizer.error('Usage: ai-analyze <file-path>\n'));
+            console.log(colorizer.error('Usage: ai-analyze <file-path>'));
+            console.log(colorizer.info('Example: ai-analyze ./src/auth.js\n'));
             return Promise.resolve();
         }
 
@@ -37,9 +48,10 @@ AIOperations.prototype = {
                 console.log(colorizer.separator());
                 console.log(colorizer.cyan('File: ') + colorizer.bright(filePath));
                 console.log(colorizer.cyan('Provider: ') + colorizer.bright(this.config.getProviderName()));
+                console.log(colorizer.cyan('Model: ') + colorizer.dim(this.config.getModel()));
                 console.log(colorizer.cyan('Analyzing...\n'));
 
-                const prompt = `You are a senior security engineer conducting a code security audit. Analyze this code for security vulnerabilities, best practices violations, and potential issues.
+                const prompt = `You are a senior security engineer conducting a comprehensive code security audit.
 
 File: ${filePath}
 
@@ -47,20 +59,33 @@ File: ${filePath}
 ${code}
 \`\`\`
 
-Provide:
-1. Security vulnerabilities (CRITICAL, HIGH, MEDIUM, LOW)
-2. Specific line numbers or code sections with issues
-3. Explanation of each vulnerability
-4. Recommended fixes
-5. General security recommendations
+Provide a detailed security analysis with:
 
-Be thorough but concise. Focus on actionable findings.`;
+1. **CRITICAL VULNERABILITIES** - Immediate security risks
+2. **HIGH PRIORITY ISSUES** - Serious concerns requiring attention
+3. **MEDIUM PRIORITY ISSUES** - Important best practice violations
+4. **LOW PRIORITY ISSUES** - Minor improvements
 
-                return this.config.call(prompt);
+For each issue include:
+- Severity level and CWE reference if applicable
+- Specific line numbers or code sections
+- Clear explanation of the vulnerability
+- Concrete code examples showing the fix
+- Potential impact if exploited
+
+5. **SECURITY RECOMMENDATIONS**
+- General security improvements
+- Best practices to implement
+- Tools or libraries to consider
+
+Be thorough, specific, and actionable. Focus on real security concerns.`;
+
+                return this.config.call(prompt, 6000);
             })
             .then(response => {
                 console.log(response);
-                console.log('\n' + colorizer.separator() + '\n');
+                console.log('\n' + colorizer.separator());
+                console.log(colorizer.info('💡 Tip: Use "ai-chat" to ask follow-up questions\n'));
             })
             .catch(err => {
                 console.log(colorizer.error('AI analysis failed: ' + err.message + '\n'));
@@ -76,7 +101,9 @@ Be thorough but concise. Focus on actionable findings.`;
         const description = args.join(' ');
         if (!description) {
             console.log(colorizer.error('Usage: ai-threat <threat description>'));
-            console.log(colorizer.info('Example: ai-threat SQL injection in user login form\n'));
+            console.log(colorizer.info('Examples:'));
+            console.log(colorizer.dim('  ai-threat SQL injection in user login form'));
+            console.log(colorizer.dim('  ai-threat XSS vulnerability in comment section\n'));
             return Promise.resolve();
         }
 
@@ -84,24 +111,52 @@ Be thorough but concise. Focus on actionable findings.`;
         console.log(colorizer.separator());
         console.log(colorizer.cyan('Query: ') + colorizer.bright(description));
         console.log(colorizer.cyan('Provider: ') + colorizer.bright(this.config.getProviderName()));
-        console.log(colorizer.cyan('Analyzing...\n'));
+        console.log(colorizer.cyan('Analyzing threat...\n'));
 
-        const prompt = `You are a cybersecurity expert. Provide a comprehensive threat assessment for the following security concern:
+        const prompt = `You are a cybersecurity expert conducting a threat assessment.
 
-"${description}"
+Threat/Vulnerability: "${description}"
 
-Include:
-1. Threat Overview - What is this vulnerability/threat?
-2. Severity Level - Critical/High/Medium/Low with justification
-3. Attack Vectors - How could this be exploited?
-4. Potential Impact - What damage could occur?
-5. Mitigation Steps - Specific actions to prevent/fix
-6. Detection Methods - How to identify if you're vulnerable
-7. Real-world Examples - Brief examples if relevant
+Provide a comprehensive analysis:
 
-Be practical and actionable.`;
+1. **THREAT OVERVIEW**
+   - What is this vulnerability/threat?
+   - Technical explanation of the attack mechanism
 
-        return this.config.call(prompt)
+2. **SEVERITY ASSESSMENT**
+   - Severity Level: CRITICAL/HIGH/MEDIUM/LOW
+   - CVSS Score (if applicable)
+   - Justification for severity rating
+
+3. **ATTACK VECTORS**
+   - How can this be exploited?
+   - Prerequisites for exploitation
+   - Common attack scenarios
+
+4. **POTENTIAL IMPACT**
+   - Confidentiality impact
+   - Integrity impact
+   - Availability impact
+   - Business consequences
+
+5. **MITIGATION STRATEGIES**
+   - Immediate countermeasures
+   - Long-term preventive measures
+   - Code examples of secure implementation
+
+6. **DETECTION & MONITORING**
+   - How to identify if you're vulnerable
+   - Indicators of compromise (IOCs)
+   - Monitoring strategies
+
+7. **REAL-WORLD CONTEXT**
+   - Known exploits or CVEs
+   - Recent incidents if relevant
+   - Industry best practices
+
+Be practical, specific, and security-focused.`;
+
+        return this.config.call(prompt, 5000)
             .then(response => {
                 console.log(response);
                 console.log('\n' + colorizer.separator() + '\n');
@@ -120,8 +175,10 @@ Be practical and actionable.`;
         const vulnerability = args.join(' ');
         if (!vulnerability) {
             console.log(colorizer.error('Usage: ai-explain <vulnerability or CWE>'));
-            console.log(colorizer.info('Example: ai-explain CWE-79'));
-            console.log(colorizer.info('Example: ai-explain XSS vulnerability\n'));
+            console.log(colorizer.info('Examples:'));
+            console.log(colorizer.dim('  ai-explain CWE-79'));
+            console.log(colorizer.dim('  ai-explain XSS vulnerability'));
+            console.log(colorizer.dim('  ai-explain buffer overflow\n'));
             return Promise.resolve();
         }
 
@@ -131,21 +188,47 @@ Be practical and actionable.`;
         console.log(colorizer.cyan('Provider: ') + colorizer.bright(this.config.getProviderName()));
         console.log(colorizer.cyan('Generating explanation...\n'));
 
-        const prompt = `Explain the following security vulnerability or concept in a clear, educational way:
+        const prompt = `Provide a comprehensive educational explanation of this security concept:
 
-"${vulnerability}"
+Topic: "${vulnerability}"
 
-Structure your explanation with:
-1. Definition - What is it?
-2. How it works - Technical explanation
-3. Why it's dangerous - Potential consequences
-4. Common scenarios - Where it appears
-5. Prevention - How to avoid it
-6. Code examples - Show vulnerable vs secure code if applicable
+Structure your response:
 
-Keep it educational but accessible.`;
+1. **DEFINITION**
+   - What is it in simple terms?
+   - Technical definition
 
-        return this.config.call(prompt)
+2. **HOW IT WORKS**
+   - Technical mechanism explained step-by-step
+   - Attack flow or exploitation process
+
+3. **WHY IT'S DANGEROUS**
+   - Potential consequences and impact
+   - Real-world risk scenarios
+
+4. **COMMON SCENARIOS**
+   - Where this vulnerability typically appears
+   - Programming languages/frameworks most affected
+   - Common coding mistakes that cause it
+
+5. **PREVENTION**
+   - Best practices to avoid it
+   - Secure coding guidelines
+   - Security controls and defenses
+
+6. **CODE EXAMPLES**
+   - Vulnerable code example
+   - Secure/fixed code example
+   - Explanation of the differences
+
+7. **DETECTION**
+   - How to identify this vulnerability
+   - Tools that can detect it
+   - Testing approaches
+
+Keep it educational, clear, and practical.`;
+
+        return this.config.call(prompt, 5000)
             .then(response => {
                 console.log(response);
                 console.log('\n' + colorizer.separator() + '\n');
@@ -164,7 +247,9 @@ Keep it educational but accessible.`;
         const taskDescription = args.join(' ');
         if (!taskDescription) {
             console.log(colorizer.error('Usage: ai-generate <task description>'));
-            console.log(colorizer.info('Example: ai-generate Express API with JWT authentication\n'));
+            console.log(colorizer.info('Examples:'));
+            console.log(colorizer.dim('  ai-generate Express API with JWT authentication'));
+            console.log(colorizer.dim('  ai-generate Rate limiter middleware for Express\n'));
             return Promise.resolve();
         }
 
@@ -174,18 +259,21 @@ Keep it educational but accessible.`;
         console.log(colorizer.cyan('Provider: ') + colorizer.bright(this.config.getProviderName()));
         console.log(colorizer.cyan('Generating code...\n'));
 
-        const prompt = `You are an expert Node.js developer. Write production-ready Node.js code for the following task:
+        const prompt = `You are an expert Node.js developer. Generate production-ready, secure Node.js code.
 
 Task: ${taskDescription}
 
 Requirements:
-1. Include necessary imports and dependencies
-2. Add error handling
-3. Follow Node.js best practices
-4. Include comments explaining key sections
-5. Make code secure and efficient
+1. Include all necessary imports and dependencies
+2. Implement comprehensive error handling
+3. Follow Node.js and JavaScript best practices
+4. Add security measures (input validation, sanitization, etc.)
+5. Include clear comments explaining key sections
+6. Make code efficient and performant
+7. Follow OWASP security guidelines
+8. Include usage examples if applicable
 
-Provide complete, working code that can be used immediately.`;
+Provide complete, working code that can be used immediately. If the code needs a specific npm package, mention it.`;
 
         return this.config.call(prompt, 6000)
             .then(response => {
@@ -207,14 +295,14 @@ Provide complete, working code that can be used immediately.`;
 ${JSON.stringify(trafficData, null, 2)}
 
 Identify:
-1. Suspicious patterns
-2. Potential attacks (DDoS, port scanning, etc.)
-3. Anomalies
-4. Recommendations
+1. **Suspicious Patterns** - Anomalies in the traffic
+2. **Potential Attacks** - DDoS, port scanning, brute force, etc.
+3. **Risk Assessment** - Severity and likelihood
+4. **Recommendations** - Immediate actions to take
 
-Be concise and security-focused.`;
+Be concise and actionable. Focus on security-critical findings.`;
 
-        return this.config.call(prompt, 2048)
+        return this.config.call(prompt, 3000)
             .catch(err => {
                 console.error(colorizer.error('AI traffic analysis failed: ' + err.message));
                 return null;
@@ -231,7 +319,8 @@ Be concise and security-focused.`;
         const file2Path = args[1];
 
         if (!file1Path || !file2Path) {
-            console.log(colorizer.error('Usage: ai-compare <original-file> <modified-file>\n'));
+            console.log(colorizer.error('Usage: ai-compare <original-file> <modified-file>'));
+            console.log(colorizer.info('Example: ai-compare ./old/auth.js ./new/auth.js\n'));
             return Promise.resolve();
         }
 
@@ -242,30 +331,52 @@ Be concise and security-focused.`;
             .then(([code1, code2]) => {
                 console.log(colorizer.header('AI Code Security Comparison'));
                 console.log(colorizer.separator());
+                console.log(colorizer.cyan('Original: ') + colorizer.bright(file1Path));
+                console.log(colorizer.cyan('Modified: ') + colorizer.bright(file2Path));
                 console.log(colorizer.cyan('Provider: ') + colorizer.bright(this.config.getProviderName()));
                 console.log(colorizer.cyan('Analyzing security implications...\n'));
 
                 const prompt = `Compare these two code versions from a security perspective:
 
-Original (${file1Path}):
+**Original Version** (${file1Path}):
 \`\`\`
 ${code1}
 \`\`\`
 
-Modified (${file2Path}):
+**Modified Version** (${file2Path}):
 \`\`\`
 ${code2}
 \`\`\`
 
-Analyze:
-1. New vulnerabilities introduced
-2. Security improvements made
-3. Security regressions
-4. Overall security impact assessment
+Provide a detailed security comparison:
 
-Focus only on security-relevant changes.`;
+1. **NEW VULNERABILITIES INTRODUCED**
+   - Security issues that didn't exist in original
+   - Severity and impact of each
+   - Specific code changes that introduced them
 
-                return this.config.call(prompt, 3072);
+2. **SECURITY IMPROVEMENTS MADE**
+   - Vulnerabilities fixed or mitigated
+   - Better security practices implemented
+   - Defense mechanisms added
+
+3. **SECURITY REGRESSIONS**
+   - Previously secure code made less secure
+   - Removed security controls
+   - Weakened defenses
+
+4. **FUNCTIONALITY VS SECURITY TRADEOFFS**
+   - New features that affect security posture
+   - Performance changes with security implications
+
+5. **OVERALL SECURITY IMPACT**
+   - Net security improvement or degradation
+   - Risk assessment: Better/Worse/Neutral
+   - Recommendations for next steps
+
+Focus only on security-relevant changes. Be specific and actionable.`;
+
+                return this.config.call(prompt, 5000);
             })
             .then(response => {
                 console.log(response);
@@ -283,12 +394,12 @@ Focus only on security-relevant changes.`;
         }
 
         const projectPath = args[0] || '.';
-        const pkgPath = `${projectPath}/package.json`;
+        const pkgPath = path.join(projectPath, 'package.json');
 
         return fs.readFile(pkgPath, 'utf8')
             .catch(() => '')
             .then(pkg => {
-                const projectInfo = pkg ? `Package.json:\n${pkg}\n\n` : 'No package.json found.\n';
+                const projectInfo = pkg ? `Package.json:\n\`\`\`json\n${pkg}\n\`\`\`\n` : 'No package.json found.\n';
 
                 console.log(colorizer.header('AI Security Recommendations'));
                 console.log(colorizer.separator());
@@ -296,21 +407,50 @@ Focus only on security-relevant changes.`;
                 console.log(colorizer.cyan('Provider: ') + colorizer.bright(this.config.getProviderName()));
                 console.log(colorizer.cyan('Generating improvement plan...\n'));
 
-                const prompt = `As a security consultant, provide a comprehensive security improvement plan for this project:
+                const prompt = `As a senior security consultant, provide a comprehensive security improvement plan for this Node.js project:
 
 ${projectInfo}
 
-Provide:
-1. Quick wins - Easy security improvements
-2. Critical priorities - Must-fix issues
-3. Best practices - Security measures to implement
-4. Tools to integrate - Security scanning, monitoring, etc.
-5. Development workflow improvements
-6. Long-term security strategy
+Provide actionable recommendations:
 
-Be practical and prioritized.`;
+1. **QUICK WINS** (Implement Today)
+   - Easy security improvements with high impact
+   - Configuration changes
+   - Simple code updates
 
-                return this.config.call(prompt, 3072);
+2. **CRITICAL PRIORITIES** (This Week)
+   - Must-fix security issues
+   - High-risk vulnerabilities
+   - Essential security controls
+
+3. **DEPENDENCY SECURITY**
+   - Vulnerable packages to update
+   - Unnecessary dependencies to remove
+   - Suggested secure alternatives
+
+4. **SECURITY BEST PRACTICES** (This Month)
+   - Security measures to implement
+   - Code patterns to adopt
+   - Architecture improvements
+
+5. **TOOLS & INTEGRATION** (Ongoing)
+   - Security scanning tools (SAST, DAST, SCA)
+   - Monitoring and logging solutions
+   - CI/CD security pipeline additions
+
+6. **DEVELOPMENT WORKFLOW**
+   - Security review processes
+   - Secure coding guidelines
+   - Training and awareness
+
+7. **LONG-TERM STRATEGY** (Quarterly)
+   - Security architecture evolution
+   - Compliance considerations (OWASP, SOC 2, etc.)
+   - Incident response planning
+
+Be practical, prioritized, and specific. Include concrete examples where applicable.`;
+
+                return this.config.call(prompt, 5000);
             })
             .then(response => {
                 console.log(response);
@@ -328,32 +468,319 @@ Be practical and prioritized.`;
         }
 
         const query = args.join(' ');
+
+        // If no query provided, enter interactive mode
         if (!query) {
-            console.log(colorizer.error('Usage: ai-chat <your question>'));
-            console.log(colorizer.info('Example: ai-chat How do I secure my Express API?\n'));
-            return Promise.resolve();
+            return this.startInteractiveChat();
         }
 
+        // Single query mode
         console.log(colorizer.header('AI Assistant'));
         console.log(colorizer.separator());
         console.log(colorizer.cyan('Query: ') + colorizer.bright(query));
         console.log(colorizer.cyan('Provider: ') + colorizer.bright(this.config.getProviderName()));
         console.log(colorizer.cyan('Thinking...\n'));
 
-        const prompt = `${this.systemPrompt}
-
-User Question: ${query}
-
-Provide a comprehensive, helpful response that addresses the user's question with practical, actionable information.`;
+        const prompt = this.buildPromptWithHistory(query);
 
         return this.config.call(prompt, 4096)
             .then(response => {
+                // Add to conversation history
+                this.addToHistory('user', query);
+                this.addToHistory('assistant', response);
+
                 console.log(response);
-                console.log('\n' + colorizer.separator() + '\n');
+                console.log('\n' + colorizer.separator());
+                console.log(colorizer.info('💡 Tip: Run "ai-chat" without arguments for interactive mode\n'));
             })
             .catch(err => {
                 console.log(colorizer.error('Chat failed: ' + err.message + '\n'));
             });
+    },
+
+    startInteractiveChat() {
+        console.log(colorizer.header('AI Interactive Chat'));
+        console.log(colorizer.separator());
+        console.log(colorizer.cyan('Provider: ') + colorizer.bright(this.config.getProviderName()));
+        console.log(colorizer.cyan('Model: ') + colorizer.dim(this.config.getModel()));
+        console.log();
+        console.log(colorizer.info('Commands:'));
+        console.log(colorizer.dim('  /exit or /quit - Exit chat'));
+        console.log(colorizer.dim('  /clear - Clear conversation history'));
+        console.log(colorizer.dim('  /history - Show conversation history'));
+        console.log(colorizer.dim('  /save <filename> - Save conversation to file'));
+        console.log(colorizer.dim('  /stream - Toggle streaming mode (Google Gemini only)'));
+        console.log();
+        console.log(colorizer.success('Chat started! Ask me anything...\n'));
+
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+            prompt: colorizer.cyan('You: ')
+        });
+
+        let streamMode = false;
+
+        const handleInput = (input) => {
+            const trimmedInput = input.trim();
+
+            // Handle empty input
+            if (!trimmedInput) {
+                rl.prompt();
+                return;
+            }
+
+            // Handle commands
+            if (trimmedInput.startsWith('/')) {
+                return this.handleChatCommand(trimmedInput, rl, () => handleInput, streamMode)
+                    .then(result => {
+                        if (result && result.exit) {
+                            rl.close();
+                            return;
+                        }
+                        if (result && result.streamMode !== undefined) {
+                            streamMode = result.streamMode;
+                        }
+                        rl.prompt();
+                    });
+            }
+
+            // Add user message to history
+            this.addToHistory('user', trimmedInput);
+
+            // Build prompt with context
+            const prompt = this.buildPromptWithHistory(trimmedInput);
+
+            console.log(colorizer.dim('\nAI: '));
+
+            // Use streaming if enabled and provider supports it
+            if (streamMode && this.config.provider === 'google') {
+                let response = '';
+                this.config.callStream(prompt, 4096, (chunk) => {
+                    process.stdout.write(chunk);
+                    response += chunk;
+                })
+                    .then(() => {
+                        console.log('\n');
+                        this.addToHistory('assistant', response);
+                        rl.prompt();
+                    })
+                    .catch(err => {
+                        console.log(colorizer.error('\n\nError: ' + err.message + '\n'));
+                        rl.prompt();
+                    });
+            } else {
+                // Regular non-streaming response
+                this.config.call(prompt, 4096)
+                    .then(response => {
+                        console.log(response + '\n');
+                        this.addToHistory('assistant', response);
+                        rl.prompt();
+                    })
+                    .catch(err => {
+                        console.log(colorizer.error('\nError: ' + err.message + '\n'));
+                        rl.prompt();
+                    });
+            }
+        };
+
+        rl.prompt();
+        rl.on('line', handleInput);
+
+        return new Promise((resolve) => {
+            rl.on('close', () => {
+                console.log(colorizer.info('\nChat ended. Goodbye!\n'));
+                resolve();
+            });
+        });
+    },
+
+    handleChatCommand(command, rl, handleInput, streamMode) {
+        const parts = command.split(' ');
+        const cmd = parts[0].toLowerCase();
+
+        switch (cmd) {
+            case '/exit':
+            case '/quit':
+                return Promise.resolve({ exit: true });
+
+            case '/clear':
+                this.conversationHistory = [];
+                console.log(colorizer.success('Conversation history cleared.\n'));
+                return Promise.resolve();
+
+            case '/history':
+                return this.showHistory();
+
+            case '/save':
+                const filename = parts[1] || `chat_${Date.now()}.txt`;
+                return this.saveConversation(filename);
+
+            case '/stream':
+                if (this.config.provider === 'google') {
+                    streamMode = !streamMode;
+                    console.log(colorizer.success(`Streaming mode ${streamMode ? 'enabled' : 'disabled'}.\n`));
+                    return Promise.resolve({ streamMode });
+                } else {
+                    console.log(colorizer.warning('Streaming only available with Google Gemini.\n'));
+                    return Promise.resolve();
+                }
+
+            case '/help':
+                console.log(colorizer.info('Available commands:'));
+                console.log(colorizer.dim('  /exit, /quit - Exit chat'));
+                console.log(colorizer.dim('  /clear - Clear conversation history'));
+                console.log(colorizer.dim('  /history - Show conversation history'));
+                console.log(colorizer.dim('  /save <filename> - Save conversation'));
+                console.log(colorizer.dim('  /stream - Toggle streaming (Gemini only)'));
+                console.log(colorizer.dim('  /help - Show this help\n'));
+                return Promise.resolve();
+
+            default:
+                console.log(colorizer.warning('Unknown command. Type /help for available commands.\n'));
+                return Promise.resolve();
+        }
+    },
+
+    buildPromptWithHistory(currentQuery) {
+        let prompt = this.systemPrompt + '\n\n';
+
+        // Add conversation history if available
+        if (this.conversationHistory.length > 0) {
+            prompt += 'Previous conversation:\n';
+            this.conversationHistory.forEach(msg => {
+                prompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+            });
+            prompt += '\n';
+        }
+
+        prompt += `Current user question: ${currentQuery}\n\n`;
+        prompt += 'Provide a comprehensive, helpful response that addresses the user\'s question with practical, actionable information. If this is a follow-up question, consider the previous conversation context.';
+
+        return prompt;
+    },
+
+    addToHistory(role, content) {
+        this.conversationHistory.push({ role, content, timestamp: Date.now() });
+
+        // Trim history if it gets too long
+        if (this.conversationHistory.length > this.maxHistoryLength) {
+            this.conversationHistory = this.conversationHistory.slice(-this.maxHistoryLength);
+        }
+    },
+
+    showHistory() {
+        if (this.conversationHistory.length === 0) {
+            console.log(colorizer.info('No conversation history yet.\n'));
+            return Promise.resolve();
+        }
+
+        console.log(colorizer.header('Conversation History'));
+        console.log(colorizer.separator());
+
+        this.conversationHistory.forEach((msg, index) => {
+            const role = msg.role === 'user' ? colorizer.cyan('You') : colorizer.green('AI');
+            const preview = msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : '');
+            console.log(`${index + 1}. ${role}: ${preview}`);
+        });
+
+        console.log();
+        return Promise.resolve();
+    },
+
+    saveConversation(filename) {
+        if (this.conversationHistory.length === 0) {
+            console.log(colorizer.warning('No conversation to save.\n'));
+            return Promise.resolve();
+        }
+
+        let content = '# AI Chat Conversation\n\n';
+        content += `Date: ${new Date().toISOString()}\n`;
+        content += `Provider: ${this.config.getProviderName()}\n`;
+        content += `Model: ${this.config.getModel()}\n\n`;
+        content += '---\n\n';
+
+        this.conversationHistory.forEach((msg, index) => {
+            content += `## ${msg.role === 'user' ? 'User' : 'AI Assistant'} (Message ${index + 1})\n\n`;
+            content += msg.content + '\n\n';
+            content += '---\n\n';
+        });
+
+        return fs.writeFile(filename, content)
+            .then(() => {
+                console.log(colorizer.success(`Conversation saved to ${filename}\n`));
+            })
+            .catch(err => {
+                console.log(colorizer.error(`Failed to save conversation: ${err.message}\n`));
+            });
+    },
+
+    clearHistory() {
+        this.conversationHistory = [];
+    },
+
+    // Batch analyze multiple files
+    analyzeBatch(args) {
+        if (!this.config.isConfigured()) {
+            console.log(colorizer.error('AI not configured. Use "ai-setup <provider> <key>" first.\n'));
+            return Promise.resolve();
+        }
+
+        const directory = args[0] || '.';
+        const extension = args[1] || '.js';
+
+        console.log(colorizer.header('AI Batch Security Analysis'));
+        console.log(colorizer.separator());
+        console.log(colorizer.cyan('Directory: ') + colorizer.bright(directory));
+        console.log(colorizer.cyan('Extension: ') + colorizer.bright(extension));
+        console.log(colorizer.cyan('Scanning for files...\n'));
+
+        return this.findFiles(directory, extension)
+            .then(files => {
+                if (files.length === 0) {
+                    console.log(colorizer.warning('No files found.\n'));
+                    return;
+                }
+
+                console.log(colorizer.info(`Found ${files.length} file(s)\n`));
+
+                // Analyze each file
+                return files.reduce((promise, file) => {
+                    return promise.then(() => {
+                        console.log(colorizer.cyan('\nAnalyzing: ') + file);
+                        return this.analyzeCode([file])
+                            .catch(err => {
+                                console.log(colorizer.warning(`Skipped ${file}: ${err.message}`));
+                            });
+                    });
+                }, Promise.resolve());
+            })
+            .then(() => {
+                console.log(colorizer.success('\nBatch analysis complete!\n'));
+            })
+            .catch(err => {
+                console.log(colorizer.error('Batch analysis failed: ' + err.message + '\n'));
+            });
+    },
+
+    findFiles(dir, extension) {
+        return fs.readdir(dir, { withFileTypes: true })
+            .then(items => {
+                const promises = items.map(item => {
+                    const fullPath = path.join(dir, item.name);
+
+                    if (item.isDirectory() && !['node_modules', '.git', 'dist'].includes(item.name)) {
+                        return this.findFiles(fullPath, extension);
+                    } else if (item.isFile() && fullPath.endsWith(extension)) {
+                        return [fullPath];
+                    }
+                    return [];
+                });
+
+                return Promise.all(promises);
+            })
+            .then(results => results.flat())
+            .catch(() => []);
     }
 };
 
