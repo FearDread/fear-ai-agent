@@ -50,6 +50,7 @@ const AIConfig = function () {
 };
 
 AIConfig.prototype = {
+  
   initializeProviders() {
     // Initialize Anthropic
     if (this.anthropicKey) {
