@@ -12,18 +12,20 @@ const SecurityAgent = function() {
   
   // Module definitions with metadata
   this.definitions = [
+    // Security
     { name: 'scanner', file: './modules/security/scanner', displayName: 'Security Scanner' },
     { name: 'webScraper', file: './modules/security/web', displayName: 'Web Scraper' },
     { name: 'vulnAssessment', file: './modules/security/vulnerability', displayName: 'Vuln Assessment' },
     { name: 'trafficMonitor', file: './modules/security/monitor', displayName: 'Traffic Monitor' },
     { name: 'cveDatabase', file: './modules/security/cve', displayName: 'CVE Database' },
-
+    // AI
     { name: 'aiAnalyzer', file: './modules/ai/ai', displayName: 'AI Analyzer' },
     { name: 'codeAnalyzer', file: './modules/code/analyzer', displayName: 'Code Analyzer' },
     { name: 'apiTester', file: './modules/analyze/api', displayName: 'API Tester' },
-
+    // Coding
     { name: 'codeRefactor', file: './modules/code/refactor', displayName: 'Code Refactor' },
-    { name: 'htmlToReact', file: './modules/code/react', displayName: 'HTML to React' }
+    { name: 'htmlToReact', file: './modules/code/react', displayName: 'HTML to React' },
+    { name: 'JQueryToReact', file: './modules/code/jquery', displayName: 'jQuery to React' }
   ];
   
   // Command to module mappings
@@ -70,22 +72,23 @@ const SecurityAgent = function() {
     'refactor-project': { module: 'codeRefactor', method: 'refactorProject', description: 'Refactor project' },
     'analyze-refactor': { module: 'codeRefactor', method: 'analyzeCode', description: 'Analyze for refactoring' },
     'compare-refactor': { module: 'codeRefactor', method: 'compareVersions', description: 'Compare versions' },
-    
     // Web scraper commands
     'scrape': { module: 'webScraper', method: 'scrape', description: 'Scrape webpage' },
     'scrape-links': { module: 'webScraper', method: 'scrapeLinks', description: 'Extract links' },
     'scrape-images': { module: 'webScraper', method: 'scrapeImages', description: 'Extract images' },
     'export-scrape': { module: 'webScraper', method: 'exportScrape', description: 'Export scraped data' },
     'analyze-headers': { module: 'webScraper', method: 'analyzeSecurityHeaders', description: 'Analyze security headers' },
-    
     // Vulnerability assessment commands
     'vuln-assess': { module: 'vulnAssessment', method: 'assess', description: 'Run vulnerability assessment' },
     'export-vuln': { module: 'vulnAssessment', method: 'exportResults', description: 'Export vulnerability results' },
-    
     // HTML to React commands
     'html-to-react': { module: 'htmlToReact', method: 'convert', description: 'Convert HTML to React' },
     'batch-convert': { module: 'htmlToReact', method: 'convertBatch', description: 'Batch convert HTML files' },
-    'analyze-html': { module: 'htmlToReact', method: 'analyzeHTML', description: 'Analyze HTML structure' }
+    'analyze-html': { module: 'htmlToReact', method: 'analyzeHTML', description: 'Analyze HTML structure' },
+    // jQuery to React commands
+    'jquery-to-react': { module: 'JQueryToReact', method: 'convert', description: 'Convert jQuery to React' },
+    'jq-batch-convert': { module: 'JQueryToReact', method: 'convertBatch', description: 'Batch convert jQuery files' },
+    'analyze-jquery': { module: 'JQueryToReact', method: 'analyzeBatch', description: 'Analyze jQuery structure' }
   };
   
   this.loadModules();
@@ -312,6 +315,7 @@ SecurityAgent.prototype = {
       'Web Scraping': ['scrape', 'scrape-links', 'scrape-images', 'export-scrape', 'analyze-headers'],
       'Vulnerability Assessment': ['vuln-assess', 'export-vuln'],
       'HTML to React': ['html-to-react', 'batch-convert', 'analyze-html'],
+      'jQuery to React': ['jquery-to-react', 'jquery-batch-convert', 'analyze-jquery'],
       'System': ['help', 'status', 'history', 'banner', 'version', 'clear', 'exit']
     };
 
