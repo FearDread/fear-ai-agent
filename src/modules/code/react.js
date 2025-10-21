@@ -11,6 +11,7 @@ const HTMLToReact = function() {
   this.jsModules = new Map();
   this.globalVariables = new Set();
   this.dependencies = new Set();
+  this.helperFunctions = new Set();
 }
 
 HTMLToReact.prototype = {
@@ -51,7 +52,6 @@ HTMLToReact.prototype = {
         });
         console.log();
         
-        // Show conversion summary
         this.printConversionSummary();
       })
       .catch(err => {
@@ -64,39 +64,26 @@ HTMLToReact.prototype = {
   },
 
   convertHTML(html, baseName, inputDir) {
-    // Reset state for new conversion
     this.extractedComponents = [];
     this.externalStylesheets = [];
     this.externalScripts = [];
     this.jsModules.clear();
     this.globalVariables.clear();
     this.dependencies.clear();
+    this.helperFunctions.clear();
     
-    // Extract external resources first
     this.extractExternalResources(html, inputDir);
-    
-    // Clean up HTML
     html = this.cleanHTML(html);
     
-    // Extract and convert components
     const mainComponent = this.createMainComponent(html, baseName);
     
-    // Convert inline styles
     mainComponent.jsx = this.convertInlineStyles(mainComponent.jsx);
-    
-    // Convert attributes
     mainComponent.jsx = this.convertAttributes(mainComponent.jsx);
-    
-    // Convert event handlers and JavaScript
     mainComponent.jsx = this.convertEventHandlers(mainComponent.jsx);
-    
-    // Fix common JSX issues
     mainComponent.jsx = this.fixJSXIssues(mainComponent.jsx);
     
-    // Extract reusable components
     this.extractComponents(mainComponent);
     
-    // Add external resources to imports
     if (this.externalStylesheets.length > 0) {
       mainComponent.externalStyles = this.externalStylesheets;
     }
@@ -105,8 +92,8 @@ HTMLToReact.prototype = {
       mainComponent.externalScripts = this.externalScripts;
     }
     
-    // Add detected dependencies
     mainComponent.dependencies = Array.from(this.dependencies);
+    mainComponent.helperFunctions = Array.from(this.helperFunctions);
     
     return {
       main: mainComponent,
@@ -116,7 +103,6 @@ HTMLToReact.prototype = {
   },
 
   extractExternalResources(html, inputDir) {
-    // Extract external stylesheets
     const linkRegex = /<link[^>]+rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi;
     let match;
     
@@ -133,7 +119,6 @@ HTMLToReact.prototype = {
       }
     }
     
-    // Extract external scripts
     const scriptRegex = /<script[^>]*src=["']([^"']+)["'][^>]*>[\s\S]*?<\/script>/gi;
     
     while ((match = scriptRegex.exec(html)) !== null) {
@@ -153,7 +138,6 @@ HTMLToReact.prototype = {
         });
         console.log(colorizer.info('  Found script: ' + src + (isModule ? ' (module)' : '')));
       } else {
-        // Detect common libraries
         this.detectLibrary(src);
         console.log(colorizer.warning('  Skipping CDN script: ' + src));
       }
@@ -182,18 +166,13 @@ HTMLToReact.prototype = {
   },
 
   cleanHTML(html) {
-    // Remove DOCTYPE and html/head/body tags for component extraction
     html = html.replace(/<!DOCTYPE[^>]*>/gi, '');
     html = html.replace(/<html[^>]*>/gi, '');
     html = html.replace(/<\/html>/gi, '');
     html = html.replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '');
     html = html.replace(/<body[^>]*>/gi, '');
     html = html.replace(/<\/body>/gi, '');
-    
-    // Remove comments but preserve conditional comments
     html = html.replace(/<!--(?!\[if)[\s\S]*?-->/g, '');
-    
-    // Remove external link tags (we'll import them)
     html = html.replace(/<link[^>]+>/gi, '');
     
     return html.trim();
@@ -202,7 +181,6 @@ HTMLToReact.prototype = {
   createMainComponent(html, baseName) {
     const componentName = this.toPascalCase(baseName);
     
-    // Extract any embedded CSS
     const styleMatches = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
     let css = '';
     
@@ -214,11 +192,11 @@ HTMLToReact.prototype = {
       html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
     }
     
-    // Extract embedded scripts and convert to React
     const scriptMatches = html.match(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/gi);
     const hooks = [];
     const functions = [];
     const effects = [];
+    const utilities = [];
     
     if (scriptMatches) {
       scriptMatches.forEach(match => {
@@ -235,6 +213,9 @@ HTMLToReact.prototype = {
           if (converted.effects.length > 0) {
             effects.push(...converted.effects);
           }
+          if (converted.utilities.length > 0) {
+            utilities.push(...converted.utilities);
+          }
         }
       });
       html = html.replace(/<script(?![^>]*src=)[^>]*>[\s\S]*?<\/script>/gi, '');
@@ -244,14 +225,15 @@ HTMLToReact.prototype = {
       name: componentName,
       jsx: html,
       css: css,
-      imports: this.determineRequiredImports(hooks, functions, effects),
+      imports: this.determineRequiredImports(hooks, functions, effects, utilities),
       hooks: hooks,
       functions: functions,
-      effects: effects
+      effects: effects,
+      utilities: utilities
     };
   },
 
-  determineRequiredImports(hooks, functions, effects) {
+  determineRequiredImports(hooks, functions, effects, utilities) {
     const imports = new Set(['React']);
     
     if (hooks.length > 0 || hooks.some(h => h.includes('useState'))) {
@@ -260,10 +242,10 @@ HTMLToReact.prototype = {
     if (effects.length > 0 || hooks.some(h => h.includes('useEffect'))) {
       imports.add('useEffect');
     }
-    if (hooks.some(h => h.includes('useRef')) || functions.some(f => f.body.includes('ref'))) {
+    if (hooks.some(h => h.includes('useRef')) || functions.some(f => f.body && f.body.includes('ref'))) {
       imports.add('useRef');
     }
-    if (hooks.some(h => h.includes('useCallback'))) {
+    if (hooks.some(h => h.includes('useCallback')) || functions.some(f => f.useCallback)) {
       imports.add('useCallback');
     }
     if (hooks.some(h => h.includes('useMemo'))) {
@@ -277,69 +259,89 @@ HTMLToReact.prototype = {
     const hooks = [];
     const functions = [];
     const effects = [];
+    const utilities = [];
     
-    // Analyze code structure
     const analysis = this.analyzeJavaScript(jsCode);
     
-    // Convert global variables to state
+    // Convert variables to state
     analysis.variables.forEach(variable => {
-      if (!this.isConstant(variable.name)) {
+      if (!this.isConstant(variable.name) && this.needsState(variable, jsCode)) {
         const initialValue = variable.value || 'null';
-        hooks.push(`const [${variable.name}, set${this.toPascalCase(variable.name)}] = useState(${initialValue});`);
+        const stateVar = `const [${variable.name}, set${this.toPascalCase(variable.name)}] = useState(${initialValue});`;
+        hooks.push(stateVar);
+        this.globalVariables.add(variable.name);
         console.log(colorizer.info('  Converting variable to state: ' + variable.name));
       } else {
         hooks.push(`const ${variable.name} = ${variable.value};`);
       }
     });
     
-    // Convert DOM ready handlers to useEffect
-    if (jsCode.includes('DOMContentLoaded') || jsCode.includes('window.onload') || 
-        jsCode.includes('$(document).ready') || jsCode.includes('$(function')) {
+    // Convert DOM ready handlers
+    if (this.hasDOMReadyHandler(jsCode)) {
       const effectCode = this.extractDOMReadyCode(jsCode);
       if (effectCode) {
         effects.push({
           code: effectCode,
-          dependencies: '[]'
+          dependencies: '[]',
+          comment: 'Component mount effect (converted from DOM ready)'
         });
         console.log(colorizer.info('  Converting DOM ready to useEffect'));
       }
     }
     
-    // Convert event listeners to useEffect with cleanup
+    // Convert event listeners
     const listeners = this.extractEventListeners(jsCode);
     listeners.forEach(listener => {
       effects.push({
         code: this.convertEventListenerToEffect(listener),
-        dependencies: listener.dependencies || '[]'
+        dependencies: listener.dependencies || '[]',
+        comment: `Event listener for ${listener.event}`
       });
       console.log(colorizer.info('  Converting event listener: ' + listener.event));
     });
     
-    // Extract and convert functions
+    // Extract functions with better handling
     const functionMatches = this.extractFunctions(jsCode);
     functionMatches.forEach(func => {
-      functions.push({
-        name: func.name,
-        params: func.params,
-        body: this.convertFunctionToReact(func.body),
-        isAsync: func.isAsync
-      });
+      const convertedFunc = this.convertFunctionToReact(func);
+      functions.push(convertedFunc);
       console.log(colorizer.info('  Extracting function: ' + func.name));
     });
     
-    // Convert class definitions
+    // Extract utility functions that can be outside component
+    const utilityFuncs = this.extractUtilityFunctions(jsCode);
+    utilityFuncs.forEach(util => {
+      utilities.push(util);
+      this.helperFunctions.add(util.name);
+      console.log(colorizer.info('  Extracting utility function: ' + util.name));
+    });
+    
+    // Extract classes
     const classes = this.extractClasses(jsCode);
     if (classes.length > 0) {
       console.log(colorizer.warning('  Found ' + classes.length + ' class(es) - consider refactoring to hooks'));
     }
     
-    return { hooks, functions, effects };
+    return { hooks, functions, effects, utilities };
+  },
+
+  needsState(variable, code) {
+    // Check if variable is reassigned in the code
+    const reassignmentRegex = new RegExp(`\\b${variable.name}\\s*=`, 'g');
+    const matches = code.match(reassignmentRegex);
+    return matches && matches.length > 1; // More than initial assignment
+  },
+
+  hasDOMReadyHandler(jsCode) {
+    return jsCode.includes('DOMContentLoaded') || 
+           jsCode.includes('window.onload') || 
+           jsCode.includes('$(document).ready') || 
+           jsCode.includes('$(function');
   },
 
   analyzeJavaScript(code) {
     const variables = [];
     
-    // Extract let/var/const declarations
     const varRegex = /(let|var|const)\s+(\w+)\s*=\s*([^;]+);/g;
     let match;
     
@@ -352,20 +354,24 @@ HTMLToReact.prototype = {
   },
 
   isConstant(varName) {
-    // Check if variable name suggests it's a constant
-    return /^[A-Z_]+$/.test(varName) || varName.startsWith('CONFIG') || varName.startsWith('DEFAULT');
+    return /^[A-Z_]+$/.test(varName) || 
+           varName.startsWith('CONFIG') || 
+           varName.startsWith('DEFAULT') ||
+           varName.startsWith('CONST');
   },
 
   extractDOMReadyCode(jsCode) {
     let code = jsCode;
     
-    // Remove DOMContentLoaded wrapper
+    // Remove various DOM ready wrappers
     code = code.replace(/document\.addEventListener\s*\(\s*['"]DOMContentLoaded['"]\s*,\s*function\s*\(\)\s*\{/g, '');
+    code = code.replace(/document\.addEventListener\s*\(\s*['"]DOMContentLoaded['"]\s*,\s*\(\)\s*=>\s*\{/g, '');
     code = code.replace(/window\.onload\s*=\s*function\s*\(\)\s*\{/g, '');
+    code = code.replace(/window\.onload\s*=\s*\(\)\s*=>\s*\{/g, '');
     code = code.replace(/\$\(document\)\.ready\s*\(\s*function\s*\(\)\s*\{/g, '');
     code = code.replace(/\$\(function\s*\(\)\s*\{/g, '');
     
-    // Remove closing braces and parentheses
+    // Remove closing braces
     code = code.replace(/\}\s*\)\s*;?\s*$/g, '');
     code = code.replace(/\}\s*;?\s*$/g, '');
     
@@ -374,7 +380,9 @@ HTMLToReact.prototype = {
 
   extractEventListeners(jsCode) {
     const listeners = [];
-    const listenerRegex = /(\w+)\.addEventListener\s*\(\s*['"](\w+)['"]\s*,\s*(\w+|function[^}]+\})\s*\)/g;
+    
+    // Standard addEventListener
+    const listenerRegex = /(\w+)\.addEventListener\s*\(\s*['"](\w+)['"]\s*,\s*((?:function[^}]+\}|\(\)[^}]+\}|\w+))\s*\)/g;
     let match;
     
     while ((match = listenerRegex.exec(jsCode)) !== null) {
@@ -387,18 +395,35 @@ HTMLToReact.prototype = {
       });
     }
     
+    // jQuery event listeners
+    const jqueryRegex = /\$\([^)]+\)\.(on|click|change|submit)\s*\(\s*['"]?(\w+)?['"]?\s*,?\s*(function[^}]+\}|\(\)[^}]+\})\s*\)/g;
+    
+    while ((match = jqueryRegex.exec(jsCode)) !== null) {
+      const [, method, event, handler] = match;
+      listeners.push({
+        element: 'element',
+        event: event || method,
+        handler,
+        dependencies: this.extractDependencies(handler),
+        isJQuery: true
+      });
+    }
+    
     return listeners;
   },
 
   extractDependencies(code) {
-    // Extract variables used in the code
     const vars = new Set();
     const varRegex = /\b([a-z_$][a-z0-9_$]*)\b/gi;
     let match;
     
+    const reserved = ['function', 'return', 'const', 'let', 'var', 'if', 'else', 
+                      'for', 'while', 'true', 'false', 'null', 'undefined', 
+                      'this', 'window', 'document', 'console', 'e', 'event'];
+    
     while ((match = varRegex.exec(code)) !== null) {
       const varName = match[1];
-      if (!['function', 'return', 'const', 'let', 'var', 'if', 'else', 'for', 'while'].includes(varName)) {
+      if (!reserved.includes(varName) && this.globalVariables.has(varName)) {
         vars.add(varName);
       }
     }
@@ -407,15 +432,30 @@ HTMLToReact.prototype = {
   },
 
   convertEventListenerToEffect(listener) {
-    return `const handle${this.toPascalCase(listener.event)} = ${listener.handler};
-    ${listener.element}.addEventListener('${listener.event}', handle${this.toPascalCase(listener.event)});
-    return () => ${listener.element}.removeEventListener('${listener.event}', handle${this.toPascalCase(listener.event)});`;
+    const handlerName = `handle${this.toPascalCase(listener.event)}`;
+    let code = '';
+    
+    if (listener.isJQuery) {
+      code = `// TODO: Replace jQuery selector with ref\n`;
+      code += `const ${handlerName} = ${listener.handler};\n`;
+      code += `// $(element).on('${listener.event}', ${handlerName});\n`;
+      code += `return () => {}; // Add cleanup`;
+    } else {
+      code = `const ${handlerName} = ${listener.handler};\n`;
+      code += `const element = ${listener.element}; // TODO: Use ref\n`;
+      code += `if (element) {\n`;
+      code += `  element.addEventListener('${listener.event}', ${handlerName});\n`;
+      code += `  return () => element.removeEventListener('${listener.event}', ${handlerName});\n`;
+      code += `}`;
+    }
+    
+    return code;
   },
 
   extractFunctions(jsCode) {
     const functions = [];
     
-    // Regular functions
+    // Regular function declarations
     const functionRegex = /(async\s+)?function\s+(\w+)\s*\(([^)]*)\)\s*\{([\s\S]*?)\n\}/g;
     let match;
     
@@ -425,11 +465,12 @@ HTMLToReact.prototype = {
         name,
         params: params.trim(),
         body: body.trim(),
-        isAsync: !!asyncKeyword
+        isAsync: !!asyncKeyword,
+        type: 'function'
       });
     }
     
-    // Arrow functions assigned to const/let/var
+    // Arrow functions
     const arrowRegex = /(const|let|var)\s+(\w+)\s*=\s*(async\s+)?\(([^)]*)\)\s*=>\s*\{([\s\S]*?)\n\}/g;
     
     while ((match = arrowRegex.exec(jsCode)) !== null) {
@@ -438,11 +479,62 @@ HTMLToReact.prototype = {
         name,
         params: params.trim(),
         body: body.trim(),
-        isAsync: !!asyncKeyword
+        isAsync: !!asyncKeyword,
+        type: 'arrow'
+      });
+    }
+    
+    // Single-line arrow functions
+    const shortArrowRegex = /(const|let|var)\s+(\w+)\s*=\s*(async\s+)?\(([^)]*)\)\s*=>\s*([^;{]+);/g;
+    
+    while ((match = shortArrowRegex.exec(jsCode)) !== null) {
+      const [, , name, asyncKeyword, params, body] = match;
+      functions.push({
+        name,
+        params: params.trim(),
+        body: `return ${body.trim()};`,
+        isAsync: !!asyncKeyword,
+        type: 'arrow',
+        isShort: true
       });
     }
     
     return functions;
+  },
+
+  extractUtilityFunctions(jsCode) {
+    const utilities = [];
+    
+    // Functions that are pure utilities (no DOM, no state dependencies)
+    const functionRegex = /function\s+(\w+)\s*\(([^)]*)\)\s*\{([\s\S]*?)\n\}/g;
+    let match;
+    
+    while ((match = functionRegex.exec(jsCode)) !== null) {
+      const [, name, params, body] = match;
+      
+      // Check if it's a pure utility (no DOM access, no external state)
+      if (this.isPureUtility(body)) {
+        utilities.push({
+          name,
+          params: params.trim(),
+          body: body.trim(),
+          comment: 'Pure utility function'
+        });
+      }
+    }
+    
+    return utilities;
+  },
+
+  isPureUtility(code) {
+    // Check if function uses DOM or external state
+    const domPatterns = ['document.', 'window.', 'getElementById', 'querySelector', '$'];
+    const hasDOM = domPatterns.some(pattern => code.includes(pattern));
+    
+    // Check if it only does computations
+    const isComputation = /^[\s\S]*return\s+/.test(code.trim());
+    
+    return !hasDOM && isComputation;
   },
 
   extractClasses(jsCode) {
@@ -458,45 +550,167 @@ HTMLToReact.prototype = {
     return classes;
   },
 
-  convertFunctionToReact(functionCode) {
-    let converted = functionCode;
+  convertFunctionToReact(func) {
+    let converted = {
+      name: func.name,
+      params: func.params,
+      body: func.body,
+      isAsync: func.isAsync,
+      useCallback: false
+    };
     
-    // Convert document.getElementById to ref access
+    // Convert DOM manipulation
+    converted.body = this.convertDOMManipulation(converted.body);
+    
+    // Convert jQuery calls
+    converted.body = this.convertJQueryToReact(converted.body);
+    
+    // Convert AJAX/fetch calls
+    converted.body = this.convertAsyncCalls(converted.body);
+    
+    // Detect if function should use useCallback (if it depends on state)
+    if (this.shouldUseCallback(converted.body)) {
+      converted.useCallback = true;
+    }
+    
+    return converted;
+  },
+
+  convertDOMManipulation(code) {
+    let converted = code;
+    
+    // getElementById
     converted = converted.replace(
       /document\.getElementById\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
-      'document.getElementById(\'$1\') /* TODO: Use ref instead */'
+      (match, id) => {
+        this.dependencies.add('useRef');
+        return `${this.toCamelCase(id)}Ref.current`;
+      }
     );
     
-    // Convert innerHTML to dangerouslySetInnerHTML suggestion
-    converted = converted.replace(
-      /(\w+)\.innerHTML\s*=\s*(.+);/g,
-      '/* TODO: Use state or dangerouslySetInnerHTML */ // $1.innerHTML = $2;'
-    );
-    
-    // Convert querySelector to ref
+    // querySelector
     converted = converted.replace(
       /document\.querySelector\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
-      'document.querySelector(\'$1\') /* TODO: Use ref instead */'
+      (match, selector) => {
+        const refName = this.selectorToRefName(selector);
+        this.dependencies.add('useRef');
+        return `${refName}Ref.current`;
+      }
     );
     
-    // Convert jQuery selectors
+    // innerHTML - suggest dangerouslySetInnerHTML
     converted = converted.replace(
-      /\$\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
-      'document.querySelector(\'$1\') /* TODO: Use ref or state */'
+      /(\w+)\.innerHTML\s*=\s*(['"`])(.*?)\2/g,
+      (match, element, quote, content) => {
+        return `// TODO: Use state or <div dangerouslySetInnerHTML={{__html: ${quote}${content}${quote}}} />\n// ${match}`;
+      }
     );
     
-    // Flag AJAX calls for conversion
+    // textContent - suggest state
     converted = converted.replace(
-      /\$\.ajax\(/g,
-      '/* TODO: Use fetch or axios */ $.ajax('
+      /(\w+)\.textContent\s*=\s*(.+);/g,
+      '// TODO: Use state to update text\n// $1.textContent = $2;'
     );
     
+    // classList operations
     converted = converted.replace(
-      /fetch\s*\(/g,
-      '/* Consider using useEffect with async */ fetch('
+      /(\w+)\.classList\.(add|remove|toggle)\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+      (match, element, operation, className) => {
+        return `// TODO: Use className state or conditional className\n// ${match}`;
+      }
     );
     
     return converted;
+  },
+
+  convertJQueryToReact(code) {
+    let converted = code;
+    
+    // jQuery selectors
+    converted = converted.replace(
+      /\$\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+      (match, selector) => {
+        const refName = this.selectorToRefName(selector);
+        return `${refName}Ref.current /* TODO: Create ref */`;
+      }
+    );
+    
+    // jQuery .text()
+    converted = converted.replace(
+      /\$\([^)]+\)\.text\s*\(\s*([^)]+)\s*\)/g,
+      '/* TODO: Use state */ // jQuery .text($1)'
+    );
+    
+    // jQuery .html()
+    converted = converted.replace(
+      /\$\([^)]+\)\.html\s*\(\s*([^)]+)\s*\)/g,
+      '/* TODO: Use dangerouslySetInnerHTML or state */ // jQuery .html($1)'
+    );
+    
+    // jQuery .val()
+    converted = converted.replace(
+      /\$\([^)]+\)\.val\s*\(\s*\)/g,
+      '/* TODO: Use controlled input with state */ // jQuery .val()'
+    );
+    
+    // jQuery AJAX
+    converted = converted.replace(
+      /\$\.ajax\s*\(/g,
+      '/* TODO: Use fetch or axios */ // $.ajax('
+    );
+    
+    converted = converted.replace(
+      /\$\.get\s*\(/g,
+      '/* TODO: Use fetch */ // $.get('
+    );
+    
+    converted = converted.replace(
+      /\$\.post\s*\(/g,
+      '/* TODO: Use fetch with POST */ // $.post('
+    );
+    
+    return converted;
+  },
+
+  convertAsyncCalls(code) {
+    let converted = code;
+    
+    // Suggest useEffect for fetch
+    if (converted.includes('fetch(')) {
+      converted = converted.replace(
+        /(fetch\s*\([^)]+\))/g,
+        '/* Consider wrapping in useEffect */ $1'
+      );
+    }
+    
+    // XMLHttpRequest
+    if (converted.includes('XMLHttpRequest')) {
+      converted = '/* TODO: Replace XMLHttpRequest with fetch or axios */\n' + converted;
+    }
+    
+    return converted;
+  },
+
+  shouldUseCallback(body) {
+    // If function accesses state variables, it should use useCallback
+    let needsCallback = false;
+    
+    this.globalVariables.forEach(varName => {
+      if (body.includes(varName)) {
+        needsCallback = true;
+      }
+    });
+    
+    return needsCallback;
+  },
+
+  selectorToRefName(selector) {
+    // Convert CSS selector to a valid ref name
+    return selector
+      .replace(/^[#.]/, '')
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
   },
 
   cleanJSCode(code) {
@@ -508,13 +722,9 @@ HTMLToReact.prototype = {
   },
 
   convertAttributes(jsx) {
-    // Convert class to className
     jsx = jsx.replace(/\sclass=/gi, ' className=');
-    
-    // Convert for to htmlFor
     jsx = jsx.replace(/\sfor=/gi, ' htmlFor=');
     
-    // Convert inline event handlers to camelCase
     const events = {
       'onclick': 'onClick',
       'onchange': 'onChange',
@@ -542,46 +752,46 @@ HTMLToReact.prototype = {
       jsx = jsx.replace(regex, react + '=');
     });
     
-    // Convert boolean attributes
     jsx = jsx.replace(/\s(checked|disabled|readonly|required|selected|autofocus|autoplay|controls|loop|muted)(?=\s|>|\/)/gi, ' $1={true}');
-    
-    // Convert self-closing tags
     jsx = jsx.replace(/<(img|input|br|hr|meta|link|source|track|embed|area|base|col|param)([^>]*)>/gi, '<$1$2 />');
     
-    // Fix common attribute issues
-    jsx = jsx.replace(/\scharset=/gi, ' charSet=');
-    jsx = jsx.replace(/\smaxlength=/gi, ' maxLength=');
-    jsx = jsx.replace(/\sminlength=/gi, ' minLength=');
-    jsx = jsx.replace(/\sreadonly=/gi, ' readOnly=');
-    jsx = jsx.replace(/\sautofocus=/gi, ' autoFocus=');
-    jsx = jsx.replace(/\sautocomplete=/gi, ' autoComplete=');
-    jsx = jsx.replace(/\snovalidate=/gi, ' noValidate=');
-    jsx = jsx.replace(/\sframeborder=/gi, ' frameBorder=');
-    jsx = jsx.replace(/\scellpadding=/gi, ' cellPadding=');
-    jsx = jsx.replace(/\scellspacing=/gi, ' cellSpacing=');
-    jsx = jsx.replace(/\srowspan=/gi, ' rowSpan=');
-    jsx = jsx.replace(/\scolspan=/gi, ' colSpan=');
-    jsx = jsx.replace(/\stabindex=/gi, ' tabIndex=');
+    // Fix attribute casing
+    const attributeMap = {
+      'charset': 'charSet',
+      'maxlength': 'maxLength',
+      'minlength': 'minLength',
+      'readonly': 'readOnly',
+      'autofocus': 'autoFocus',
+      'autocomplete': 'autoComplete',
+      'novalidate': 'noValidate',
+      'frameborder': 'frameBorder',
+      'cellpadding': 'cellPadding',
+      'cellspacing': 'cellSpacing',
+      'rowspan': 'rowSpan',
+      'colspan': 'colSpan',
+      'tabindex': 'tabIndex'
+    };
+    
+    Object.entries(attributeMap).forEach(([html, react]) => {
+      const regex = new RegExp('\\s' + html + '=', 'gi');
+      jsx = jsx.replace(regex, ' ' + react + '=');
+    });
     
     return jsx;
   },
 
   convertEventHandlers(jsx) {
-    // Convert inline event handler strings to arrow functions
     const eventRegex = /on([A-Z]\w+)=["']([^"']+)["']/g;
     
     return jsx.replace(eventRegex, (match, eventName, handler) => {
-      // Clean up the handler
       let cleanHandler = handler
         .replace(/this\./g, '')
         .replace(/;$/, '')
         .trim();
       
-      // If it's a function call, wrap in arrow function
       if (cleanHandler.includes('(')) {
         return `on${eventName}={() => ${cleanHandler}}`;
       } else {
-        // If it's just a function name, reference it
         return `on${eventName}={${cleanHandler}}`;
       }
     });
@@ -620,7 +830,6 @@ HTMLToReact.prototype = {
       
       if (property && value) {
         const camelProperty = this.toCamelCase(property);
-        // Handle numeric values
         const numericValue = this.parseStyleValue(value);
         styles[camelProperty] = numericValue;
       }
@@ -630,13 +839,11 @@ HTMLToReact.prototype = {
   },
 
   parseStyleValue(value) {
-    // Keep strings as-is for colors, keywords, etc.
     if (value.includes('px') || value.includes('%') || value.includes('em') || 
         value.includes('rem') || value.includes('vh') || value.includes('vw')) {
       return value;
     }
     
-    // Check if it's a pure number
     if (/^\d+$/.test(value)) {
       return parseInt(value);
     }
@@ -645,17 +852,12 @@ HTMLToReact.prototype = {
   },
 
   fixJSXIssues(jsx) {
-    // Escape curly braces in text content
     jsx = jsx.replace(/>\s*\{(?!\s*\/?\w)/g, '>{"{"}');
     jsx = jsx.replace(/(?<!\w)\}\s*</g, '{"}"}}<');
-    
-    // Fix common HTML entities
     jsx = jsx.replace(/&nbsp;/g, '{" "}');
     jsx = jsx.replace(/&lt;/g, '{"<"}');
     jsx = jsx.replace(/&gt;/g, '{">"}');
     jsx = jsx.replace(/&amp;/g, '{"&"}');
-    
-    // Remove empty className attributes
     jsx = jsx.replace(/\sclassName=[""']\s*["']/g, '');
     
     return jsx;
@@ -680,7 +882,6 @@ HTMLToReact.prototype = {
           const componentName = pattern.name + (matches.length > 1 ? index + 1 : '');
           const placeholder = `<${componentName} />`;
           
-          // Check if component is substantial enough (more than 50 chars)
           if (match[0].length > 50) {
             this.extractedComponents.push({
               name: componentName,
@@ -703,7 +904,6 @@ HTMLToReact.prototype = {
     const imports = [];
     const hooksList = new Set();
     
-    // Determine required React hooks
     if (component.hooks && component.hooks.length > 0) {
       component.hooks.forEach(hook => {
         if (hook.includes('useState')) hooksList.add('useState');
@@ -718,14 +918,16 @@ HTMLToReact.prototype = {
       hooksList.add('useEffect');
     }
     
-    // Build React import
+    if (component.functions && component.functions.some(f => f.useCallback)) {
+      hooksList.add('useCallback');
+    }
+    
     if (hooksList.size > 0) {
       imports.push(`import React, { ${Array.from(hooksList).join(', ')} } from 'react';`);
     } else {
       imports.push("import React from 'react';");
     }
     
-    // Component imports
     if (component.imports && component.imports.length > 0) {
       component.imports.forEach(imp => {
         if (imp !== 'React' && !imp.includes('use')) {
@@ -734,7 +936,6 @@ HTMLToReact.prototype = {
       });
     }
     
-    // Stylesheet imports
     if (component.css) {
       imports.push(`import './${component.name}.css';`);
     }
@@ -747,6 +948,19 @@ HTMLToReact.prototype = {
     }
     
     let code = imports.join('\n') + '\n\n';
+    
+    // Add utility functions outside component
+    if (component.utilities && component.utilities.length > 0) {
+      code += '// Utility Functions\n';
+      component.utilities.forEach(util => {
+        if (util.comment) {
+          code += `// ${util.comment}\n`;
+        }
+        code += `function ${util.name}(${util.params}) {\n`;
+        code += `  ${util.body.split('\n').join('\n  ')}\n`;
+        code += `}\n\n`;
+      });
+    }
     
     code += `function ${component.name}() {\n`;
     
@@ -761,6 +975,9 @@ HTMLToReact.prototype = {
     // Add effects
     if (component.effects && component.effects.length > 0) {
       component.effects.forEach(effect => {
+        if (effect.comment) {
+          code += `  // ${effect.comment}\n`;
+        }
         code += `  useEffect(() => {\n`;
         code += `    ${effect.code.split('\n').join('\n    ')}\n`;
         code += `  }, ${effect.dependencies});\n\n`;
@@ -772,15 +989,21 @@ HTMLToReact.prototype = {
       component.functions.forEach(func => {
         const asyncKeyword = func.isAsync ? 'async ' : '';
         const params = func.params || '';
-        code += `  const ${func.name} = ${asyncKeyword}(${params}) => {\n`;
-        code += `    ${func.body.split('\n').join('\n    ')}\n`;
-        code += `  };\n\n`;
+        
+        if (func.useCallback) {
+          code += `  const ${func.name} = useCallback(${asyncKeyword}(${params}) => {\n`;
+          code += `    ${func.body.split('\n').join('\n    ')}\n`;
+          const deps = this.extractDependencies(func.body);
+          code += `  }, ${deps});\n\n`;
+        } else {
+          code += `  const ${func.name} = ${asyncKeyword}(${params}) => {\n`;
+          code += `    ${func.body.split('\n').join('\n    ')}\n`;
+          code += `  };\n\n`;
+        }
       });
     }
     
     code += '  return (\n';
-    
-    // Format JSX with proper indentation
     const formattedJSX = this.formatJSX(component.jsx, 4);
     code += formattedJSX + '\n';
     code += '  );\n';
@@ -799,14 +1022,12 @@ HTMLToReact.prototype = {
       const trimmed = line.trim();
       if (!trimmed) return '';
       
-      // Decrease indent for closing tags
       if (trimmed.startsWith('</')) {
         indentLevel = Math.max(0, indentLevel - 1);
       }
       
       const formatted = indentStr + ' '.repeat(indentLevel * 2) + trimmed;
       
-      // Increase indent for opening tags (but not self-closing)
       if (trimmed.startsWith('<') && !trimmed.startsWith('</') && !trimmed.endsWith('/>') && !trimmed.includes('</')) {
         indentLevel++;
       }
@@ -821,7 +1042,6 @@ HTMLToReact.prototype = {
     try {
       await fs.mkdir(outputDir, { recursive: true });
       
-      // Save main component
       const mainFile = path.join(outputDir, converted.main.name + '.jsx');
       const mainCode = this.generateComponent(converted.main, true);
       
@@ -829,7 +1049,6 @@ HTMLToReact.prototype = {
       savedFiles.push(mainFile);
       console.log(colorizer.success('Created: ' + mainFile));
       
-      // Save CSS if exists
       if (converted.main.css) {
         const cssFile = path.join(outputDir, converted.main.name + '.css');
         await fs.writeFile(cssFile, converted.main.css);
@@ -837,7 +1056,6 @@ HTMLToReact.prototype = {
         console.log(colorizer.success('Created: ' + cssFile));
       }
       
-      // Copy external stylesheets
       for (const style of this.externalStylesheets) {
         const destFile = path.join(outputDir, path.basename(style.original));
         
@@ -850,7 +1068,6 @@ HTMLToReact.prototype = {
         }
       }
       
-      // Process and save JavaScript modules
       if (converted.jsModules.length > 0) {
         const utilsDir = path.join(outputDir, 'utils');
         await fs.mkdir(utilsDir, { recursive: true });
@@ -863,7 +1080,6 @@ HTMLToReact.prototype = {
         }
       }
       
-      // Copy and convert external scripts
       for (const script of this.externalScripts) {
         try {
           const scriptContent = await fs.readFile(script.local, 'utf8');
@@ -883,7 +1099,6 @@ HTMLToReact.prototype = {
         }
       }
       
-      // Save extracted components
       for (const comp of converted.components) {
         const compFile = path.join(outputDir, comp.name + '.jsx');
         const compCode = this.generateComponent(comp);
@@ -893,13 +1108,11 @@ HTMLToReact.prototype = {
         console.log(colorizer.success('Created: ' + compFile));
       }
       
-      // Generate package.json if dependencies were detected
       if (this.dependencies.size > 0) {
         await this.generatePackageJson(outputDir);
         savedFiles.push(path.join(outputDir, 'package.json'));
       }
       
-      // Generate README
       await this.generateReadme(outputDir, converted);
       savedFiles.push(path.join(outputDir, 'README.md'));
       
@@ -910,14 +1123,11 @@ HTMLToReact.prototype = {
   },
 
   async convertExternalScript(scriptContent, scriptInfo) {
-    // Wrap the script in a module format if it's not already a module
     if (scriptInfo.isModule) {
       return scriptContent;
     }
     
     let converted = scriptContent;
-    
-    // Try to detect exported functions/variables
     const exports = this.detectExports(scriptContent);
     
     if (exports.length > 0) {
@@ -925,7 +1135,6 @@ HTMLToReact.prototype = {
       converted += `export { ${exports.join(', ')} };\n`;
       console.log(colorizer.info('  Detected exports: ' + exports.join(', ')));
     } else {
-      // If no clear exports, wrap everything in a default export
       converted = `// Converted from: ${scriptInfo.original}\n// Note: This file may need manual adjustments\n\n${converted}`;
     }
     
@@ -935,7 +1144,6 @@ HTMLToReact.prototype = {
   detectExports(code) {
     const exports = [];
     
-    // Detect function declarations
     const functionRegex = /function\s+(\w+)\s*\(/g;
     let match;
     
@@ -943,14 +1151,12 @@ HTMLToReact.prototype = {
       exports.push(match[1]);
     }
     
-    // Detect const/let/var declarations at top level
     const varRegex = /^(?:const|let|var)\s+(\w+)\s*=/gm;
     
     while ((match = varRegex.exec(code)) !== null) {
       exports.push(match[1]);
     }
     
-    // Detect class declarations
     const classRegex = /class\s+(\w+)/g;
     
     while ((match = classRegex.exec(code)) !== null) {
@@ -980,7 +1186,6 @@ HTMLToReact.prototype = {
       }
     };
     
-    // Add detected dependencies
     this.dependencies.forEach(dep => {
       packageJson.dependencies[dep] = 'latest';
     });
@@ -1016,6 +1221,22 @@ HTMLToReact.prototype = {
       });
     }
     
+    if (converted.main.functions && converted.main.functions.length > 0) {
+      readme += '\n## Functions\n\n';
+      readme += 'The following functions were converted:\n\n';
+      converted.main.functions.forEach(func => {
+        readme += `- **${func.name}** ${func.isAsync ? '(async)' : ''}\n`;
+      });
+    }
+    
+    if (converted.main.utilities && converted.main.utilities.length > 0) {
+      readme += '\n## Utility Functions\n\n';
+      readme += 'Pure utility functions extracted outside the component:\n\n';
+      converted.main.utilities.forEach(util => {
+        readme += `- **${util.name}**\n`;
+      });
+    }
+    
     if (this.dependencies.size > 0) {
       readme += '\n## Dependencies\n\n';
       readme += 'The following external libraries were detected:\n\n';
@@ -1029,8 +1250,10 @@ HTMLToReact.prototype = {
     readme += '- Event handlers and their implementations\n';
     readme += '- State management logic\n';
     readme += '- Any TODO comments in the code\n';
+    readme += '- DOM manipulation converted to refs\n';
+    readme += '- jQuery calls converted to React patterns\n';
     readme += '- External script integrations\n';
-    readme += '- DOM manipulation converted to React patterns\n';
+    readme += '- useCallback dependencies\n';
     
     const readmeFile = path.join(outputDir, 'README.md');
     await fs.writeFile(readmeFile, readme);
@@ -1042,6 +1265,7 @@ HTMLToReact.prototype = {
     console.log(colorizer.cyan('  Components created: ') + (this.extractedComponents.length + 1));
     console.log(colorizer.cyan('  Stylesheets: ') + this.externalStylesheets.length);
     console.log(colorizer.cyan('  Scripts processed: ') + this.externalScripts.length);
+    console.log(colorizer.cyan('  Helper functions: ') + this.helperFunctions.size);
     
     if (this.dependencies.size > 0) {
       console.log(colorizer.cyan('  Dependencies detected: ') + Array.from(this.dependencies).join(', '));
@@ -1054,6 +1278,7 @@ HTMLToReact.prototype = {
     console.log();
   },
 
+  // Batch conversion and analysis methods remain the same...
   convertBatch(args) {
     const inputDir = args[0] || '.';
     const outputDir = args[1] || './react-components';
@@ -1101,7 +1326,6 @@ HTMLToReact.prototype = {
         const promises = items.map(item => {
           const fullPath = path.join(dir, item.name);
           
-          // Skip common directories
           if (['node_modules', '.git', 'dist', 'build', 'react-components'].includes(item.name)) {
             return Promise.resolve();
           }
