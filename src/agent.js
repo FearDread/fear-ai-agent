@@ -46,13 +46,38 @@ const SecurityAgent = function() {
     'traffic-stats': { module: 'trafficMonitor', method: 'showStats', description: 'Show traffic stats' },
     'export-traffic': { module: 'trafficMonitor', method: 'exportData', description: 'Export traffic data' },
     
-    // AI analyzer commands
-    'ai-analyze': { module: 'aiAnalyzer', method: 'analyzeCode', description: 'AI code analysis' },
-    'ai-threat': { module: 'aiAnalyzer', method: 'threatAssessment', description: 'AI threat assessment' },
-    'ai-explain': { module: 'aiAnalyzer', method: 'explainVulnerability', description: 'AI explain vulnerability' },
-    'ai-setup': { module: 'aiAnalyzer', method: 'setup', description: 'Configure AI API' },
-    'ai-chat': { module: 'aiAnalyzer', method:'chat', description: 'Ask the AI'},
-    'switch-provider': { module: 'aiAnalyzer', method: 'setProvider', description: 'Switch AI provider' },
+    // AI analyzer commands - EXPANDED
+    // Configuration
+    'ai-setup': { module: 'aiAnalyzer', method: 'setup', description: 'Configure AI provider (anthropic/openai/google)' },
+    'ai-provider': { module: 'aiAnalyzer', method: 'setProvider', description: 'Switch AI provider' },
+    'ai-status': { module: 'aiAnalyzer', method: 'status', description: 'Show AI module status' },
+    'ai-help': { module: 'aiAnalyzer', method: 'help', description: 'Show AI commands help' },
+    
+    // Code Analysis
+    'ai-analyze': { module: 'aiAnalyzer', method: 'analyzeCode', description: 'AI security analysis of code file' },
+    'ai-batch': { module: 'aiAnalyzer', method: 'analyzeBatch', description: 'Batch analyze multiple files' },
+    'ai-compare': { module: 'aiAnalyzer', method: 'compareCodeVersions', description: 'Compare two code versions' },
+    
+    // Security Intelligence
+    'ai-threat': { module: 'aiAnalyzer', method: 'threatAssessment', description: 'Comprehensive threat assessment' },
+    'ai-explain': { module: 'aiAnalyzer', method: 'explainVulnerability', description: 'Explain vulnerability/CWE' },
+    
+    // Code Generation
+    'ai-generate': { module: 'aiAnalyzer', method: 'generateNodeCode', description: 'Generate secure Node.js code' },
+    
+    // Project Improvement
+    'ai-improve': { module: 'aiAnalyzer', method: 'suggestImprovements', description: 'Get security recommendations' },
+    
+    // Interactive Chat
+    'ai-chat': { module: 'aiAnalyzer', method: 'chat', description: 'Interactive AI chat assistant' },
+    'ai-clear-history': { module: 'aiAnalyzer', method: 'clearChatHistory', description: 'Clear chat history' },
+    
+    // Quick access aliases
+    'ai-scan': { module: 'aiAnalyzer', method: 'quickScan', description: 'Quick security scan' },
+    'ai-ask': { module: 'aiAnalyzer', method: 'quickChat', description: 'Quick AI question' },
+    
+    // Legacy aliases (for backwards compatibility)
+    'switch-provider': { module: 'aiAnalyzer', method: 'setProvider', description: 'Switch AI provider (alias)' },
     
     // CVE database commands
     'search-cve': { module: 'cveDatabase', method: 'searchCVE', description: 'Search CVE database' },
@@ -72,19 +97,23 @@ const SecurityAgent = function() {
     'refactor-project': { module: 'codeRefactor', method: 'refactorProject', description: 'Refactor project' },
     'analyze-refactor': { module: 'codeRefactor', method: 'analyzeCode', description: 'Analyze for refactoring' },
     'compare-refactor': { module: 'codeRefactor', method: 'compareVersions', description: 'Compare versions' },
+    
     // Web scraper commands
     'scrape': { module: 'webScraper', method: 'scrape', description: 'Scrape webpage' },
     'scrape-links': { module: 'webScraper', method: 'scrapeLinks', description: 'Extract links' },
     'scrape-images': { module: 'webScraper', method: 'scrapeImages', description: 'Extract images' },
     'export-scrape': { module: 'webScraper', method: 'exportScrape', description: 'Export scraped data' },
     'analyze-headers': { module: 'webScraper', method: 'analyzeSecurityHeaders', description: 'Analyze security headers' },
+    
     // Vulnerability assessment commands
     'vuln-assess': { module: 'vulnAssessment', method: 'assess', description: 'Run vulnerability assessment' },
     'export-vuln': { module: 'vulnAssessment', method: 'exportResults', description: 'Export vulnerability results' },
+    
     // HTML to React commands
     'html-to-react': { module: 'htmlToReact', method: 'convert', description: 'Convert HTML to React' },
     'batch-convert': { module: 'htmlToReact', method: 'convertBatch', description: 'Batch convert HTML files' },
     'analyze-html': { module: 'htmlToReact', method: 'analyzeHTML', description: 'Analyze HTML structure' },
+    
     // jQuery to React commands
     'jquery-to-react': { module: 'JQueryToReact', method: 'convert', description: 'Convert jQuery to React' },
     'jq-batch-convert': { module: 'JQueryToReact', method: 'convertBatch', description: 'Batch convert jQuery files' },
@@ -143,6 +172,7 @@ SecurityAgent.prototype = {
     this.commands['clear'] = () => this.clearScreen();
     this.commands['banner'] = () => this.showBanner();
     this.commands['version'] = () => this.showVersion();
+    this.commands['tips'] = () => this.showTips();
     this.commands['exit'] = () => this.exit();
   },
 
@@ -217,7 +247,7 @@ SecurityAgent.prototype = {
     });
     
     console.log();
-    console.log(colorizer.magenta('Type "help" for commands, "exit" to quit'));
+    console.log(colorizer.magenta('Type "help" for commands, "ai-help" for AI features, "exit" to quit'));
     console.log();
   },
 
@@ -305,18 +335,57 @@ SecurityAgent.prototype = {
 
     // Group commands by category
     const categories = {
-      'Network Scanning': ['scan-ports', 'network-info', 'check-deps', 'security-audit'],
-      'Code Analysis': ['analyze-code', 'analyze-project'],
-      'Traffic Monitoring': ['monitor-traffic', 'stop-monitor', 'traffic-stats', 'export-traffic'],
-      'AI Features': ['ai-setup', 'switch-provider', 'ai-analyze', 'ai-threat', 'ai-explain', 'ai-chat'],
-      'CVE & Security': ['search-cve', 'check-cwe', 'check-package', 'check-exploits', 'scan-deps', 'export-cve'],
-      'API Testing': ['test-endpoint', 'test-collection', 'export-report'],
-      'Code Refactoring': ['refactor-file', 'refactor-project', 'analyze-refactor', 'compare-refactor'],
-      'Web Scraping': ['scrape', 'scrape-links', 'scrape-images', 'export-scrape', 'analyze-headers'],
-      'Vulnerability Assessment': ['vuln-assess', 'export-vuln'],
-      'HTML to React': ['html-to-react', 'batch-convert', 'analyze-html'],
-      'jQuery to React': ['jquery-to-react', 'jquery-batch-convert', 'analyze-jquery'],
-      'System': ['help', 'status', 'history', 'banner', 'version', 'clear', 'exit']
+      'AI Configuration': [
+        'ai-setup', 'ai-provider', 'ai-status', 'ai-help'
+      ],
+      'AI Code Analysis': [
+        'ai-analyze', 'ai-batch', 'ai-compare', 'ai-scan'
+      ],
+      'AI Security Intelligence': [
+        'ai-threat', 'ai-explain'
+      ],
+      'AI Code Generation': [
+        'ai-generate'
+      ],
+      'AI Project Improvement': [
+        'ai-improve'
+      ],
+      'AI Chat & Assistance': [
+        'ai-chat', 'ai-ask', 'ai-clear-history'
+      ],
+      'Network Scanning': [
+        'scan-ports', 'network-info', 'check-deps', 'security-audit'
+      ],
+      'Code Analysis': [
+        'analyze-code', 'analyze-project'
+      ],
+      'Traffic Monitoring': [
+        'monitor-traffic', 'stop-monitor', 'traffic-stats', 'export-traffic'
+      ],
+      'CVE & Security': [
+        'search-cve', 'check-cwe', 'check-package', 'check-exploits', 'scan-deps', 'export-cve'
+      ],
+      'API Testing': [
+        'test-endpoint', 'test-collection', 'export-report'
+      ],
+      'Code Refactoring': [
+        'refactor-file', 'refactor-project', 'analyze-refactor', 'compare-refactor'
+      ],
+      'Web Scraping': [
+        'scrape', 'scrape-links', 'scrape-images', 'export-scrape', 'analyze-headers'
+      ],
+      'Vulnerability Assessment': [
+        'vuln-assess', 'export-vuln'
+      ],
+      'HTML to React': [
+        'html-to-react', 'batch-convert', 'analyze-html'
+      ],
+      'jQuery to React': [
+        'jquery-to-react', 'jq-batch-convert', 'analyze-jquery'
+      ],
+      'System': [
+        'help', 'status', 'history', 'banner', 'version', 'tips', 'clear', 'exit'
+      ]
     };
 
     Object.entries(categories).forEach(([category, commands]) => {
@@ -325,20 +394,68 @@ SecurityAgent.prototype = {
         const config = this.mappings[cmd];
         const desc = config ? config.description : 'Show ' + cmd.replace('-', ' ');
         
-        console.log(colorizer.bullet(cmd.padEnd(25) + ' - ' + colorizer.yellow(desc)));
+        console.log(colorizer.bullet(cmd.padEnd(25) + ' - ' + colorizer.dim(desc)));
       });
+      console.log();
     });
+
+    console.log(colorizer.info('💡 Quick Start Tips:'));
+    console.log(colorizer.dim('  • Run "ai-setup anthropic YOUR_API_KEY" to configure Claude'));
+    console.log(colorizer.dim('  • Run "ai-help" for detailed AI command documentation'));
+    console.log(colorizer.dim('  • Run "ai-chat" to start interactive AI conversation'));
+    console.log(colorizer.dim('  • Run "tips" for keyboard shortcuts and advanced features'));
+    console.log();
 
     return Promise.resolve();
   },
 
   showTips() {
-    console.log(colorizer.blue('TIPS'));
+    console.log(colorizer.section('💡 Tips & Tricks'));
+    console.log();
+    
+    console.log(colorizer.cyan('Keyboard Shortcuts:'));
     console.log(colorizer.dim('  • Press TAB for command autocomplete'));
-    console.log(colorizer.dim('  • Use arrow keys to navigate history'));
-    console.log(colorizer.dim('  • Type command name without args for usage info'));
-    console.log(colorizer.dim('  • Set NO_COLOR=1 to disable colors'));
-    console.log(colorizer.dim('  • Set DEBUG=1 for verbose error output'));
+    console.log(colorizer.dim('  • Use arrow keys to navigate command history'));
+    console.log(colorizer.dim('  • Ctrl+C to cancel current operation'));
+    console.log(colorizer.dim('  • Ctrl+D to exit'));
+    console.log();
+    
+    console.log(colorizer.cyan('AI Features:'));
+    console.log(colorizer.dim('  • Multiple providers: Anthropic Claude, OpenAI GPT, Google Gemini'));
+    console.log(colorizer.dim('  • Claude Sonnet 4.5 is the default model for Anthropic'));
+    console.log(colorizer.dim('  • Chat maintains conversation context (20 messages)'));
+    console.log(colorizer.dim('  • Use /stream in chat for real-time streaming (Gemini only)'));
+    console.log(colorizer.dim('  • Use /save in chat to export conversations'));
+    console.log();
+    
+    console.log(colorizer.cyan('Best Practices:'));
+    console.log(colorizer.dim('  • Set environment variables for API keys (see ai-help)'));
+    console.log(colorizer.dim('  • Use ai-batch for analyzing multiple files at once'));
+    console.log(colorizer.dim('  • Export reports with export-* commands for documentation'));
+    console.log(colorizer.dim('  • Run ai-status to check AI configuration'));
+    console.log();
+    
+    console.log(colorizer.cyan('Environment Variables:'));
+    console.log(colorizer.dim('  • NO_COLOR=1 - Disable colored output'));
+    console.log(colorizer.dim('  • DEBUG=1 - Enable verbose error output'));
+    console.log(colorizer.dim('  • ANTHROPIC_API_KEY - Auto-configure Anthropic Claude'));
+    console.log(colorizer.dim('  • OPENAI_API_KEY - Auto-configure OpenAI GPT'));
+    console.log(colorizer.dim('  • GOOGLE_API_KEY - Auto-configure Google Gemini'));
+    console.log(colorizer.dim('  • AI_PROVIDER - Set default AI provider'));
+    console.log();
+    
+    console.log(colorizer.cyan('Example Workflows:'));
+    console.log(colorizer.dim('  1. Security Audit:'));
+    console.log(colorizer.dim('     security-audit -> ai-improve -> ai-analyze <file>'));
+    console.log();
+    console.log(colorizer.dim('  2. Code Review:'));
+    console.log(colorizer.dim('     ai-analyze old.js -> refactor-file old.js -> ai-compare old.js new.js'));
+    console.log();
+    console.log(colorizer.dim('  3. Vulnerability Research:'));
+    console.log(colorizer.dim('     search-cve CVE-2024-1234 -> ai-explain <vulnerability> -> ai-threat <threat>'));
+    console.log();
+    console.log(colorizer.dim('  4. Interactive Learning:'));
+    console.log(colorizer.dim('     ai-chat -> ask questions -> /history -> /save report.txt'));
     console.log();
 
     return Promise.resolve();
