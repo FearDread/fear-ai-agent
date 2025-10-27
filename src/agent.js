@@ -12,6 +12,8 @@ const SecurityAgent = function () {
 
   // Module definitions with metadata
   this.definitions = [
+    // File Browser
+    { name: 'fileBrowser', file: './modules/utils/browser', displayName: 'File Browser' },
     // Security
     { name: 'scanner', file: './modules/security/scanner', displayName: 'Security Scanner' },
     { name: 'webScraper', file: './modules/security/web', displayName: 'Web Scraper' },
@@ -34,6 +36,18 @@ const SecurityAgent = function () {
 
   // Command to module mappings
   this.mappings = {
+    // File browser commands
+    'ls': { module: 'fileBrowser', method: 'list', description: 'List files and directories' },
+    'cd': { module: 'fileBrowser', method: 'cd', description: 'Change directory' },
+    'pwd': { module: 'fileBrowser', method: 'pwd', description: 'Show current directory' },
+    'cat': { module: 'fileBrowser', method: 'cat', description: 'Display file contents' },
+    'less': { module: 'fileBrowser', method: 'less', description: 'View file (paginated)' },
+    'find': { module: 'fileBrowser', method: 'find', description: 'Search for files' },
+    'file-info': { module: 'fileBrowser', method: 'info', description: 'Show file information' },
+    'tree': { module: 'fileBrowser', method: 'tree', description: 'Display directory tree' },
+    'bookmark': { module: 'fileBrowser', method: 'bookmark', description: 'Manage bookmarks' },
+    'browse-help': { module: 'fileBrowser', method: 'showHelp', description: 'File browser help' },
+
     // Scanner commands
     'scan-ports': { module: 'scanner', method: 'scanPorts', description: 'Scan network ports' },
     'check-deps': { module: 'scanner', method: 'checkDependencies', description: 'Check dependencies' },
@@ -131,13 +145,12 @@ const SecurityAgent = function () {
     'explain-algorithm': { module: 'cardValidator', method: 'explainAlgorithm', description: 'Explain validation algorithms' },
     'card-security-report': { module: 'cardValidator', method: 'securityReport', description: 'Generate security report' },
 
-    'check-card-status': { module:'cardStatusChecker', method:'checkCardStatus', description:'- Check single card' },
-    'check-card-batch': { module:'cardStatusChecker', method:'checkCardBatch', description:'- Check single card' },
-    'configure-card-checker': { module:'cardStatusChecker', method:'configureCardChecker', description:'- Check single card' },
-    'card-checker-help': { module:'cardStatusChecker', method:'showHelp', description:'- show help menu' },
+    'check-card-status': { module:'cardStatusChecker', method:'checkCardStatus', description:'Check single card' },
+    'check-card-batch': { module:'cardStatusChecker', method:'checkCardBatch', description:'Check card batch' },
+    'configure-card-checker': { module:'cardStatusChecker', method:'configure', description:'Configure card checker' },
+    'card-checker-help': { module:'cardStatusChecker', method:'showHelp', description:'Show help menu' },
 
     'compare-rates': { module: 'cryptoChecker', method: 'compareRates', description: 'Compare crypto rates across exchanges' },
-
     'crypto-price': { module: 'cryptoChecker', method: 'getPrice', description: 'Get cryptocurrency price' },
     'track-portfolio': { module: 'cryptoChecker', method: 'trackPortfolio', description: 'Track multiple cryptos' },
     'crypto-convert': { module: 'cryptoChecker', method: 'convert', description: 'Convert between cryptocurrencies' },
@@ -273,7 +286,7 @@ SecurityAgent.prototype = {
     });
 
     console.log();
-    console.log(colorizer.magenta('Type "help" for commands, "ai-help" for AI features, "exit" to quit'));
+    console.log(colorizer.magenta('Type "help" for commands, "browse-help" for file browser, "exit" to quit'));
     console.log();
   },
 
@@ -283,8 +296,17 @@ SecurityAgent.prototype = {
       hour: '2-digit',
       minute: '2-digit'
     });
-    return colorizer.bright(colorizer.cyan('[' + timestamp + '] ')) +
-      colorizer.bright(colorizer.green('FEAR >> '));
+    
+    // Show current directory if file browser is available
+    let prompt = colorizer.bright(colorizer.cyan('[' + timestamp + '] '));
+    
+    if (this.modules.fileBrowser && this.modules.fileBrowser.currentPath) {
+      const cwd = path.basename(this.modules.fileBrowser.currentPath);
+      prompt += colorizer.dim('(' + cwd + ') ');
+    }
+    
+    prompt += colorizer.bright(colorizer.green('FEAR >> '));
+    return prompt;
   },
 
   executeCommand(input) {
@@ -361,6 +383,9 @@ SecurityAgent.prototype = {
 
     // Group commands by category
     const categories = {
+      'File Browser': [
+        'ls', 'cd', 'pwd', 'cat', 'less', 'find', 'file-info', 'tree', 'bookmark', 'browse-help'
+      ],
       'AI Configuration': [
         'ai-setup', 'ai-provider', 'ai-status', 'ai-help'
       ],
@@ -426,6 +451,7 @@ SecurityAgent.prototype = {
     });
 
     console.log(colorizer.info('Quick Start Tips:'));
+    console.log(colorizer.dim('  • Run "browse-help" for file browser commands'));
     console.log(colorizer.dim('  • Run "ai-setup anthropic YOUR_API_KEY" to configure Claude'));
     console.log(colorizer.dim('  • Run "ai-help" for detailed AI command documentation'));
     console.log(colorizer.dim('  • Run "ai-chat" to start interactive AI conversation'));
@@ -444,6 +470,14 @@ SecurityAgent.prototype = {
     console.log(colorizer.dim('  • Use arrow keys to navigate command history'));
     console.log(colorizer.dim('  • Ctrl+C to cancel current operation'));
     console.log(colorizer.dim('  • Ctrl+D to exit'));
+    console.log();
+
+    console.log(colorizer.cyan('File Browser Features:'));
+    console.log(colorizer.dim('  • Navigate directories with ls, cd, pwd'));
+    console.log(colorizer.dim('  • View files with cat, less'));
+    console.log(colorizer.dim('  • Search files with find <pattern>'));
+    console.log(colorizer.dim('  • Bookmark directories for quick access'));
+    console.log(colorizer.dim('  • Use tree to visualize directory structure'));
     console.log();
 
     console.log(colorizer.cyan('AI Features:'));
@@ -471,16 +505,19 @@ SecurityAgent.prototype = {
     console.log();
 
     console.log(colorizer.cyan('Example Workflows:'));
-    console.log(colorizer.dim('  1. Security Audit:'));
+    console.log(colorizer.dim('  1. File Navigation & Analysis:'));
+    console.log(colorizer.dim('     ls -> cd src -> find config.js -> cat config.js -> ai-analyze config.js'));
+    console.log();
+    console.log(colorizer.dim('  2. Security Audit:'));
     console.log(colorizer.dim('     security-audit -> ai-improve -> ai-analyze <file>'));
     console.log();
-    console.log(colorizer.dim('  2. Code Review:'));
+    console.log(colorizer.dim('  3. Code Review:'));
     console.log(colorizer.dim('     ai-analyze old.js -> refactor-file old.js -> ai-compare old.js new.js'));
     console.log();
-    console.log(colorizer.dim('  3. Vulnerability Research:'));
+    console.log(colorizer.dim('  4. Vulnerability Research:'));
     console.log(colorizer.dim('     search-cve CVE-2024-1234 -> ai-explain <vulnerability> -> ai-threat <threat>'));
     console.log();
-    console.log(colorizer.dim('  4. Interactive Learning:'));
+    console.log(colorizer.dim('  5. Interactive Learning:'));
     console.log(colorizer.dim('     ai-chat -> ask questions -> /history -> /save report.txt'));
     console.log();
 
