@@ -428,6 +428,9 @@ SecurityAgent.prototype = {
       'Vulnerability Assessment': [
         'vuln-assess', 'export-vuln'
       ],
+      'Credit Card Checker / Validator': [
+        'validate-card', 'validate-batch', 'card-security-report', 'analyze-bin', 'explain-algorythem', 'check-card-status','check-card-batch'
+      ],
       'HTML to React': [
         'html-to-react', 'batch-convert', 'analyze-html'
       ],
