@@ -156,7 +156,12 @@ const SecurityAgent = function () {
     'crypto-convert': { module: 'cryptoChecker', method: 'convert', description: 'Convert between cryptocurrencies' },
     'market-summary': { module: 'cryptoChecker', method: 'marketSummary', description: 'Show market summary' },
     'export-rates': { module: 'cryptoChecker', method: 'exportRates', description: 'Export rates to file' },
-    'crypto-help': { module: 'cryptoChecker', method: 'showHelp', description: 'Show crypto commands help' }
+    'crypto-help': { module: 'cryptoChecker', method: 'showHelp', description: 'Show crypto commands help' },
+    
+    'analyze-payment-data': { module: 'paymentAuditor', method: 'analyzeFile', description: 'Scan JSON for payment data exposure' },
+'show-test-cards': { module: 'paymentAuditor', method: 'showTestCards', description: 'Show official test cards' },
+'explain-payment-algorithm': { module: 'paymentAuditor', method: 'explainAlgorithm', description: 'Explain validation algorithms' },
+'payment-audit-help': { module: 'paymentAuditor', method: 'showHelp', description: 'Payment auditor help' },
   };
 
   this.loadModules();
