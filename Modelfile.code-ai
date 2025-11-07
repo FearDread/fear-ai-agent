@@ -1,0 +1,5 @@
+FROM qwen2.5-coder:7b
+PARAMETER num_ctx 8192
+PARAMETER temperature 0.2
+TEMPLATE """{{- if .Suffix }}<|fim_prefix|>{{ .Prompt }}<|fim_suffix|>{{ .Suffix }}<|fim_middle|>{{ else }}User: {{ .Prompt }}
+Assistant:{{ end }}"""

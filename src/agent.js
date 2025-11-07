@@ -1,3 +1,4 @@
+// agent.js - Enhanced with separate chat sessions and background services
 const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
@@ -9,6 +10,10 @@ const SecurityAgent = function () {
   this.commandHistory = [];
   this.historyIndex = 0;
   this.maxHistory = 100;
+  
+  // Background services
+  this.backgroundServices = new Map();
+  this.serviceStatus = new Map();
 
   // Module definitions with metadata
   this.definitions = [
@@ -22,6 +27,7 @@ const SecurityAgent = function () {
     { name: 'cveDatabase', file: './modules/security/cve', displayName: 'CVE Database' },
     // AI
     { name: 'aiAnalyzer', file: './modules/ai/ai', displayName: 'AI Analyzer' },
+    { name: 'aiChat', file: './modules/ai/chat', displayName: 'AI Chat Session' },
     { name: 'codeAnalyzer', file: './modules/code/analyzer', displayName: 'Code Analyzer' },
     { name: 'apiTester', file: './modules/analyze/api', displayName: 'API Tester' },
     // Coding
@@ -30,10 +36,13 @@ const SecurityAgent = function () {
     { name: 'JQueryToReact', file: './modules/code/jquery', displayName: 'jQuery to React' },
     // CC / Bin validation
     { name: 'cardValidator', file: './modules/ccard/validator', displayName: 'Card Validator' },
-    { name: 'cardStatusChecker', file: './modules/ccard/checker', displayName: 'Card Payment Checker'},
-    { name: 'cryptoChecker', file: './modules/crypto/exchange', displayName: 'Crypto Exchange' }
+    { name: 'cardStatusChecker', file: './modules/ccard/checker', displayName: 'Card Payment Checker' },
+    { name: 'cryptoChecker', file: './modules/crypto/exchange', displayName: 'Crypto Exchange' },
+    { name: 'googleDorks', file: './modules/security/dorks', displayName: 'Google Dorks' },
+    // Background Services
+    { name: 'serviceManager', file: './modules/utils/manager', displayName: 'Service Manager' }
   ];
-
+ 
   // Command to module mappings
   this.mappings = {
     // File browser commands
@@ -65,37 +74,36 @@ const SecurityAgent = function () {
     'export-traffic': { module: 'trafficMonitor', method: 'exportData', description: 'Export traffic data' },
 
     // AI analyzer commands - EXPANDED
-    // Configuration
-    'ai-setup': { module: 'aiAnalyzer', method: 'setup', description: 'Configure AI provider (anthropic/openai/google)' },
+    'ai-setup': { module: 'aiAnalyzer', method: 'setup', description: 'Configure AI provider' },
     'ai-provider': { module: 'aiAnalyzer', method: 'setProvider', description: 'Switch AI provider' },
     'ai-status': { module: 'aiAnalyzer', method: 'status', description: 'Show AI module status' },
     'ai-help': { module: 'aiAnalyzer', method: 'help', description: 'Show AI commands help' },
-
-    // Code Analysis
-    'ai-analyze': { module: 'aiAnalyzer', method: 'analyzeCode', description: 'AI security analysis of code file' },
-    'ai-batch': { module: 'aiAnalyzer', method: 'analyzeBatch', description: 'Batch analyze multiple files' },
-    'ai-compare': { module: 'aiAnalyzer', method: 'compareCodeVersions', description: 'Compare two code versions' },
-
-    // Security Intelligence
-    'ai-threat': { module: 'aiAnalyzer', method: 'threatAssessment', description: 'Comprehensive threat assessment' },
-    'ai-explain': { module: 'aiAnalyzer', method: 'explainVulnerability', description: 'Explain vulnerability/CWE' },
-
-    // Code Generation
-    'ai-generate': { module: 'aiAnalyzer', method: 'generateNodeCode', description: 'Generate secure Node.js code' },
-
-    // Project Improvement
-    'ai-improve': { module: 'aiAnalyzer', method: 'suggestImprovements', description: 'Get security recommendations' },
-
-    // Interactive Chat
-    'ai-chat': { module: 'aiAnalyzer', method: 'chat', description: 'Interactive AI chat assistant' },
-    'ai-clear-history': { module: 'aiAnalyzer', method: 'clearChatHistory', description: 'Clear chat history' },
-
-    // Quick access aliases
+    'ai-analyze': { module: 'aiAnalyzer', method: 'analyzeCode', description: 'AI security analysis' },
+    'ai-batch': { module: 'aiAnalyzer', method: 'analyzeBatch', description: 'Batch analyze files' },
+    'ai-compare': { module: 'aiAnalyzer', method: 'compareCodeVersions', description: 'Compare code versions' },
+    'ai-threat': { module: 'aiAnalyzer', method: 'threatAssessment', description: 'Threat assessment' },
+    'ai-explain': { module: 'aiAnalyzer', method: 'explainVulnerability', description: 'Explain vulnerability' },
+    'ai-generate': { module: 'aiAnalyzer', method: 'generateNodeCode', description: 'Generate Node.js code' },
+    'ai-improve': { module: 'aiAnalyzer', method: 'suggestImprovements', description: 'Security recommendations' },
     'ai-scan': { module: 'aiAnalyzer', method: 'quickScan', description: 'Quick security scan' },
     'ai-ask': { module: 'aiAnalyzer', method: 'quickChat', description: 'Quick AI question' },
 
-    // Legacy aliases (for backwards compatibility)
-    'switch-provider': { module: 'aiAnalyzer', method: 'setProvider', description: 'Switch AI provider (alias)' },
+    // AI Chat Session commands (separate from main AI)
+    'chat': { module: 'aiChat', method: 'startSession', description: 'Start interactive chat session' },
+    'chat-quick': { module: 'aiChat', method: 'quickQuery', description: 'Quick chat query' },
+    'chat-history': { module: 'aiChat', method: 'showHistory', description: 'Show chat history' },
+    'chat-save': { module: 'aiChat', method: 'saveSession', description: 'Save chat session' },
+    'chat-load': { module: 'aiChat', method: 'loadSession', description: 'Load chat session' },
+    'chat-clear': { module: 'aiChat', method: 'clearHistory', description: 'Clear chat history' },
+    'chat-export': { module: 'aiChat', method: 'exportChat', description: 'Export chat to file' },
+
+    // Background Services commands
+    'service-start': { module: 'serviceManager', method: 'startService', description: 'Start background service' },
+    'service-stop': { module: 'serviceManager', method: 'stopService', description: 'Stop background service' },
+    'service-status': { module: 'serviceManager', method: 'serviceStatus', description: 'Show service status' },
+    'service-list': { module: 'serviceManager', method: 'listServices', description: 'List all services' },
+    'service-logs': { module: 'serviceManager', method: 'showLogs', description: 'Show service logs' },
+    'service-restart': { module: 'serviceManager', method: 'restartService', description: 'Restart service' },
 
     // CVE database commands
     'search-cve': { module: 'cveDatabase', method: 'searchCVE', description: 'Search CVE database' },
@@ -137,7 +145,7 @@ const SecurityAgent = function () {
     'jq-batch-convert': { module: 'JQueryToReact', method: 'convertBatch', description: 'Batch convert jQuery files' },
     'analyze-jquery': { module: 'JQueryToReact', method: 'analyzeBatch', description: 'Analyze jQuery structure' },
 
-    // CC and BIN number validation
+    // CC and BIN validation
     'validate-card': { module: 'cardValidator', method: 'validateCard', description: 'Validate card number format' },
     'validate-batch': { module: 'cardValidator', method: 'validateBatch', description: 'Batch validate cards' },
     'analyze-bin': { module: 'cardValidator', method: 'analyzeBIN', description: 'Analyze BIN number' },
@@ -145,23 +153,28 @@ const SecurityAgent = function () {
     'explain-algorithm': { module: 'cardValidator', method: 'explainAlgorithm', description: 'Explain validation algorithms' },
     'card-security-report': { module: 'cardValidator', method: 'securityReport', description: 'Generate security report' },
 
-    'check-card-status': { module:'cardStatusChecker', method:'checkCardStatus', description:'Check single card' },
-    'check-card-batch': { module:'cardStatusChecker', method:'checkCardBatch', description:'Check card batch' },
-    'configure-card-checker': { module:'cardStatusChecker', method:'configure', description:'Configure card checker' },
-    'card-checker-help': { module:'cardStatusChecker', method:'showHelp', description:'Show help menu' },
+    'check-card-status': { module: 'cardStatusChecker', method: 'checkCardStatus', description: 'Check single card' },
+    'check-card-batch': { module: 'cardStatusChecker', method: 'checkCardBatch', description: 'Check card batch' },
+    'configure-card-checker': { module: 'cardStatusChecker', method: 'configure', description: 'Configure card checker' },
+    'card-checker-help': { module: 'cardStatusChecker', method: 'showHelp', description: 'Show help menu' },
 
-    'compare-rates': { module: 'cryptoChecker', method: 'compareRates', description: 'Compare crypto rates across exchanges' },
+    'compare-rates': { module: 'cryptoChecker', method: 'compareRates', description: 'Compare crypto rates' },
     'crypto-price': { module: 'cryptoChecker', method: 'getPrice', description: 'Get cryptocurrency price' },
-    'track-portfolio': { module: 'cryptoChecker', method: 'trackPortfolio', description: 'Track multiple cryptos' },
-    'crypto-convert': { module: 'cryptoChecker', method: 'convert', description: 'Convert between cryptocurrencies' },
-    'market-summary': { module: 'cryptoChecker', method: 'marketSummary', description: 'Show market summary' },
-    'export-rates': { module: 'cryptoChecker', method: 'exportRates', description: 'Export rates to file' },
-    'crypto-help': { module: 'cryptoChecker', method: 'showHelp', description: 'Show crypto commands help' },
-    
-    'analyze-payment-data': { module: 'paymentAuditor', method: 'analyzeFile', description: 'Scan JSON for payment data exposure' },
-'show-test-cards': { module: 'paymentAuditor', method: 'showTestCards', description: 'Show official test cards' },
-'explain-payment-algorithm': { module: 'paymentAuditor', method: 'explainAlgorithm', description: 'Explain validation algorithms' },
-'payment-audit-help': { module: 'paymentAuditor', method: 'showHelp', description: 'Payment auditor help' },
+    'track-portfolio': { module: 'cryptoChecker', method: 'trackPortfolio', description: 'Track cryptos' },
+    'crypto-convert': { module: 'cryptoChecker', method: 'convert', description: 'Convert cryptocurrencies' },
+    'market-summary': { module: 'cryptoChecker', method: 'marketSummary', description: 'Market summary' },
+    'export-rates': { module: 'cryptoChecker', method: 'exportRates', description: 'Export rates' },
+    'crypto-help': { module: 'cryptoChecker', method: 'showHelp', description: 'Crypto help' },
+
+    // Google Dorks commands
+    'list-dorks': { module: 'googleDorks', method: 'listDorks', description: 'List dork templates' },
+    'generate-dork': { module: 'googleDorks', method: 'generateDork', description: 'Generate dorks' },
+    'custom-dork': { module: 'googleDorks', method: 'customDork', description: 'Create custom dork' },
+    'dork-categories': { module: 'googleDorks', method: 'showCategories', description: 'Show categories' },
+    'save-dorks': { module: 'googleDorks', method: 'saveDorks', description: 'Save dorks' },
+    'load-custom-dorks': { module: 'googleDorks', method: 'loadCustomDorks', description: 'Load custom dorks' },
+    'advanced-dorks': { module: 'googleDorks', method: 'generateAdvancedDorks', description: 'Advanced dorks' },
+    'dork-help': { module: 'googleDorks', method: 'showHelp', description: 'Dorks help' },
   };
 
   this.loadModules();
@@ -191,7 +204,7 @@ SecurityAgent.prototype = {
     this.definitions.forEach(moduleDef => {
       try {
         const ModuleClass = require(moduleDef.file);
-        this.modules[moduleDef.name] = new ModuleClass();
+        this.modules[moduleDef.name] = new ModuleClass(this);
         console.log(colorizer.dim('  [OK] ' + moduleDef.displayName));
       } catch (err) {
         console.log(colorizer.warning('  [SKIP] ' + moduleDef.displayName + ' - ' + err.message));
@@ -221,7 +234,6 @@ SecurityAgent.prototype = {
   },
 
   start() {
-    //this.clearScreen();
     this.showBanner();
     this.showStatus();
 
@@ -255,11 +267,10 @@ SecurityAgent.prototype = {
   },
 
   showBanner() {
-
     const banner = [
       '=============================================================',
       '║                                                           ║',
-      '║           SECURITY AI AGENT v2.3                          ║',
+      '║           SECURITY AI AGENT v2.4                          ║',
       '║           Advanced Security Testing Framework             ║',
       '║                                                           ║',
       '=============================================================',
@@ -277,7 +288,7 @@ SecurityAgent.prototype = {
       const module = this.modules[moduleDef.name];
       const status = module ? colorizer.green('[READY]') : colorizer.red('[UNAVAILABLE]');
 
-      // Special status for AI Analyzer
+      // Special status for AI modules
       if (moduleDef.name === 'aiAnalyzer' && module) {
         const configured = module.isConfigured && module.isConfigured();
         const provider = module.getProviderName && module.getProviderName();
@@ -285,13 +296,32 @@ SecurityAgent.prototype = {
           colorizer.green('[READY - ' + provider + ']') :
           colorizer.yellow('[NOT CONFIGURED]');
         console.log(colorizer.cyan('  ' + moduleDef.displayName.padEnd(20)) + aiStatus);
+      } else if (moduleDef.name === 'aiChat' && module) {
+        const configured = module.isConfigured && module.isConfigured();
+        const chatStatus = configured ?
+          colorizer.green('[READY]') :
+          colorizer.yellow('[NOT CONFIGURED]');
+        console.log(colorizer.cyan('  ' + moduleDef.displayName.padEnd(20)) + chatStatus);
       } else {
         console.log(colorizer.cyan('  ' + moduleDef.displayName.padEnd(20)) + status);
       }
     });
 
+    // Show background services status
+    if (this.backgroundServices.size > 0) {
+      console.log();
+      console.log(colorizer.section('Background Services'));
+      this.backgroundServices.forEach((service, name) => {
+        const status = this.serviceStatus.get(name);
+        const statusText = status === 'running' ? 
+          colorizer.green('[RUNNING]') : 
+          colorizer.dim('[STOPPED]');
+        console.log(colorizer.cyan('  ' + name.padEnd(20)) + statusText);
+      });
+    }
+
     console.log();
-    console.log(colorizer.magenta('Type "help" for commands, "browse-help" for file browser, "exit" to quit'));
+    console.log(colorizer.magenta('Type "help" for commands, "chat" for AI chat, "exit" to quit'));
     console.log();
   },
 
@@ -301,15 +331,21 @@ SecurityAgent.prototype = {
       hour: '2-digit',
       minute: '2-digit'
     });
-    
-    // Show current directory if file browser is available
+
     let prompt = colorizer.bright(colorizer.cyan('[' + timestamp + '] '));
-    
+
     if (this.modules.fileBrowser && this.modules.fileBrowser.currentPath) {
       const cwd = path.basename(this.modules.fileBrowser.currentPath);
       prompt += colorizer.dim('(' + cwd + ') ');
     }
-    
+
+    // Show active services count
+    const activeServices = Array.from(this.serviceStatus.values())
+      .filter(status => status === 'running').length;
+    if (activeServices > 0) {
+      prompt += colorizer.yellow(`[${activeServices} services] `);
+    }
+
     prompt += colorizer.bright(colorizer.green('FEAR >> '));
     return prompt;
   },
@@ -364,7 +400,7 @@ SecurityAgent.prototype = {
 
   showVersion() {
     console.log(colorizer.section('Version Information'));
-    console.log(colorizer.cyan('  Agent Version: ') + colorizer.bright('2.3.0'));
+    console.log(colorizer.cyan('  Agent Version: ') + colorizer.bright('2.4.0'));
     console.log(colorizer.cyan('  Node Version: ') + colorizer.bright(process.version));
     console.log(colorizer.cyan('  Platform: ') + colorizer.bright(process.platform));
     console.log(colorizer.cyan('  Architecture: ') + colorizer.bright(process.arch));
@@ -386,28 +422,19 @@ SecurityAgent.prototype = {
   showHelp() {
     console.log(colorizer.box('Security AI Agent - Command Reference'));
 
-    // Group commands by category
     const categories = {
       'File Browser': [
         'ls', 'cd', 'pwd', 'cat', 'less', 'find', 'file-info', 'tree', 'bookmark', 'browse-help'
       ],
-      'AI Configuration': [
-        'ai-setup', 'ai-provider', 'ai-status', 'ai-help'
+      'AI Analysis (Main)': [
+        'ai-setup', 'ai-provider', 'ai-status', 'ai-help', 'ai-analyze', 'ai-batch', 
+        'ai-compare', 'ai-threat', 'ai-explain', 'ai-generate', 'ai-improve', 'ai-scan', 'ai-ask'
       ],
-      'AI Code Analysis': [
-        'ai-analyze', 'ai-batch', 'ai-compare', 'ai-scan'
+      'AI Chat (Separate Session)': [
+        'chat', 'chat-quick', 'chat-history', 'chat-save', 'chat-load', 'chat-clear', 'chat-export'
       ],
-      'AI Security Intelligence': [
-        'ai-threat', 'ai-explain'
-      ],
-      'AI Code Generation': [
-        'ai-generate'
-      ],
-      'AI Project Improvement': [
-        'ai-improve'
-      ],
-      'AI Chat & Assistance': [
-        'ai-chat', 'ai-ask', 'ai-clear-history'
+      'Background Services': [
+        'service-start', 'service-stop', 'service-status', 'service-list', 'service-logs', 'service-restart'
       ],
       'Network Scanning': [
         'scan-ports', 'network-info', 'check-deps', 'security-audit'
@@ -421,27 +448,6 @@ SecurityAgent.prototype = {
       'CVE & Security': [
         'search-cve', 'check-cwe', 'check-package', 'check-exploits', 'scan-deps', 'export-cve'
       ],
-      'API Testing': [
-        'test-endpoint', 'test-collection', 'export-report'
-      ],
-      'Code Refactoring': [
-        'refactor-file', 'refactor-project', 'analyze-refactor', 'compare-refactor'
-      ],
-      'Web Scraping': [
-        'scrape', 'scrape-links', 'scrape-images', 'export-scrape', 'analyze-headers'
-      ],
-      'Vulnerability Assessment': [
-        'vuln-assess', 'export-vuln'
-      ],
-      'Credit Card Checker / Validator': [
-        'validate-card', 'validate-batch', 'card-security-report', 'analyze-bin', 'explain-algorythem', 'check-card-status','check-card-batch'
-      ],
-      'HTML to React': [
-        'html-to-react', 'batch-convert', 'analyze-html'
-      ],
-      'jQuery to React': [
-        'jquery-to-react', 'jq-batch-convert', 'analyze-jquery'
-      ],
       'System': [
         'help', 'status', 'history', 'banner', 'version', 'tips', 'clear', 'exit'
       ]
@@ -452,18 +458,15 @@ SecurityAgent.prototype = {
       commands.forEach(cmd => {
         const config = this.mappings[cmd];
         const desc = config ? config.description : 'Show ' + cmd.replace('-', ' ');
-
         console.log(colorizer.bullet(cmd.padEnd(25) + ' - ' + colorizer.dim(desc)));
       });
       console.log();
     });
 
-    console.log(colorizer.info('Quick Start Tips:'));
-    console.log(colorizer.dim('  • Run "browse-help" for file browser commands'));
-    console.log(colorizer.dim('  • Run "ai-setup anthropic YOUR_API_KEY" to configure Claude'));
-    console.log(colorizer.dim('  • Run "ai-help" for detailed AI command documentation'));
-    console.log(colorizer.dim('  • Run "ai-chat" to start interactive AI conversation'));
-    console.log(colorizer.dim('  • Run "tips" for keyboard shortcuts and advanced features'));
+    console.log(colorizer.info('Quick Start:'));
+    console.log(colorizer.dim('  • Run "chat" to start AI conversation (separate from analysis)'));
+    console.log(colorizer.dim('  • Run "service-list" to see available background services'));
+    console.log(colorizer.dim('  • Run "ai-setup" to configure AI analysis tools'));
     console.log();
 
     return Promise.resolve();
@@ -473,69 +476,65 @@ SecurityAgent.prototype = {
     console.log(colorizer.section('💡 Tips & Tricks'));
     console.log();
 
-    console.log(colorizer.cyan('Keyboard Shortcuts:'));
-    console.log(colorizer.dim('  • Press TAB for command autocomplete'));
-    console.log(colorizer.dim('  • Use arrow keys to navigate command history'));
-    console.log(colorizer.dim('  • Ctrl+C to cancel current operation'));
-    console.log(colorizer.dim('  • Ctrl+D to exit'));
+    console.log(colorizer.cyan('New Features:'));
+    console.log(colorizer.dim('  • Separate AI Chat: Use "chat" for conversational AI'));
+    console.log(colorizer.dim('  • Background Services: Run tasks in the background'));
+    console.log(colorizer.dim('  • Service Management: Start/stop/monitor services'));
     console.log();
 
-    console.log(colorizer.cyan('File Browser Features:'));
-    console.log(colorizer.dim('  • Navigate directories with ls, cd, pwd'));
-    console.log(colorizer.dim('  • View files with cat, less'));
-    console.log(colorizer.dim('  • Search files with find <pattern>'));
-    console.log(colorizer.dim('  • Bookmark directories for quick access'));
-    console.log(colorizer.dim('  • Use tree to visualize directory structure'));
+    console.log(colorizer.cyan('Chat vs AI Commands:'));
+    console.log(colorizer.dim('  • "chat" - Conversational AI with context retention'));
+    console.log(colorizer.dim('  • "ai-analyze" - Security-focused code analysis'));
+    console.log(colorizer.dim('  • "ai-ask" - Quick single questions'));
     console.log();
 
-    console.log(colorizer.cyan('AI Features:'));
-    console.log(colorizer.dim('  • Multiple providers: Anthropic Claude, OpenAI GPT, Google Gemini'));
-    console.log(colorizer.dim('  • Claude Sonnet 4.5 is the default model for Anthropic'));
-    console.log(colorizer.dim('  • Chat maintains conversation context (20 messages)'));
-    console.log(colorizer.dim('  • Use /stream in chat for real-time streaming (Gemini only)'));
-    console.log(colorizer.dim('  • Use /save in chat to export conversations'));
-    console.log();
-
-    console.log(colorizer.cyan('Best Practices:'));
-    console.log(colorizer.dim('  • Set environment variables for API keys (see ai-help)'));
-    console.log(colorizer.dim('  • Use ai-batch for analyzing multiple files at once'));
-    console.log(colorizer.dim('  • Export reports with export-* commands for documentation'));
-    console.log(colorizer.dim('  • Run ai-status to check AI configuration'));
-    console.log();
-
-    console.log(colorizer.cyan('Environment Variables:'));
-    console.log(colorizer.dim('  • NO_COLOR=1 - Disable colored output'));
-    console.log(colorizer.dim('  • DEBUG=1 - Enable verbose error output'));
-    console.log(colorizer.dim('  • ANTHROPIC_API_KEY - Auto-configure Anthropic Claude'));
-    console.log(colorizer.dim('  • OPENAI_API_KEY - Auto-configure OpenAI GPT'));
-    console.log(colorizer.dim('  • GOOGLE_API_KEY - Auto-configure Google Gemini'));
-    console.log(colorizer.dim('  • AI_PROVIDER - Set default AI provider'));
-    console.log();
-
-    console.log(colorizer.cyan('Example Workflows:'));
-    console.log(colorizer.dim('  1. File Navigation & Analysis:'));
-    console.log(colorizer.dim('     ls -> cd src -> find config.js -> cat config.js -> ai-analyze config.js'));
-    console.log();
-    console.log(colorizer.dim('  2. Security Audit:'));
-    console.log(colorizer.dim('     security-audit -> ai-improve -> ai-analyze <file>'));
-    console.log();
-    console.log(colorizer.dim('  3. Code Review:'));
-    console.log(colorizer.dim('     ai-analyze old.js -> refactor-file old.js -> ai-compare old.js new.js'));
-    console.log();
-    console.log(colorizer.dim('  4. Vulnerability Research:'));
-    console.log(colorizer.dim('     search-cve CVE-2024-1234 -> ai-explain <vulnerability> -> ai-threat <threat>'));
-    console.log();
-    console.log(colorizer.dim('  5. Interactive Learning:'));
-    console.log(colorizer.dim('     ai-chat -> ask questions -> /history -> /save report.txt'));
+    console.log(colorizer.cyan('Background Services:'));
+    console.log(colorizer.dim('  • Auto-monitoring: Continuous security scanning'));
+    console.log(colorizer.dim('  • Scheduled tasks: Run operations on schedule'));
+    console.log(colorizer.dim('  • Log aggregation: Collect and analyze logs'));
     console.log();
 
     return Promise.resolve();
   },
 
+  // Background service management
+  registerService(name, service) {
+    this.backgroundServices.set(name, service);
+    this.serviceStatus.set(name, 'stopped');
+  },
+
+  startService(name) {
+    const service = this.backgroundServices.get(name);
+    if (service && service.start) {
+      service.start();
+      this.serviceStatus.set(name, 'running');
+      return true;
+    }
+    return false;
+  },
+
+  stopService(name) {
+    const service = this.backgroundServices.get(name);
+    if (service && service.stop) {
+      service.stop();
+      this.serviceStatus.set(name, 'stopped');
+      return true;
+    }
+    return false;
+  },
+
   exit() {
     console.log(colorizer.cyan('\nShutting down...'));
 
-    // Cleanup
+    // Stop all background services
+    this.backgroundServices.forEach((service, name) => {
+      if (this.serviceStatus.get(name) === 'running') {
+        console.log(colorizer.dim(`  Stopping ${name}...`));
+        this.stopService(name);
+      }
+    });
+
+    // Cleanup modules
     if (this.modules.trafficMonitor && this.modules.trafficMonitor.stopMonitoring) {
       this.modules.trafficMonitor.stopMonitoring();
     }
@@ -544,6 +543,5 @@ SecurityAgent.prototype = {
     process.exit(0);
   }
 };
-
 
 module.exports = SecurityAgent;
