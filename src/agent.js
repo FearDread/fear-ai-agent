@@ -17,9 +17,7 @@ const SecurityAgent = function () {
 
   // Module definitions with metadata
   this.definitions = [
-    // File Browser
-    { name: 'fileBrowser', file: './modules/utils/browser', displayName: 'File Browser' },
-    // Security
+        // Security
     { name: 'scanner', file: './modules/security/scanner', displayName: 'Security Scanner' },
     { name: 'webScraper', file: './modules/security/web', displayName: 'Web Scraper' },
     { name: 'vulnAssessment', file: './modules/security/vulnerability', displayName: 'Vuln Assessment' },
@@ -29,6 +27,8 @@ const SecurityAgent = function () {
     { name: 'aiAnalyzer', file: './modules/ai/ai', displayName: 'AI Analyzer' },
     { name: 'aiChat', file: './modules/ai/chat', displayName: 'AI Chat Session' },
     { name: 'codeAnalyzer', file: './modules/code/analyzer', displayName: 'Code Analyzer' },
+    // Analysis
+    { name: 'googleDorks', file: './modules/analyze/dorks', displayName: 'Google Dorks' },
     { name: 'apiTester', file: './modules/analyze/api', displayName: 'API Tester' },
     // Coding
     { name: 'codeRefactor', file: './modules/code/refactor', displayName: 'Code Refactor' },
@@ -38,8 +38,8 @@ const SecurityAgent = function () {
     { name: 'cardValidator', file: './modules/ccard/validator', displayName: 'Card Validator' },
     { name: 'cardStatusChecker', file: './modules/ccard/checker', displayName: 'Card Payment Checker' },
     { name: 'cryptoChecker', file: './modules/crypto/exchange', displayName: 'Crypto Exchange' },
-    { name: 'googleDorks', file: './modules/security/dorks', displayName: 'Google Dorks' },
-    // Background Services
+    // Utils Services
+    { name: 'fileBrowser', file: './modules/utils/browser', displayName: 'File Browser' },
     { name: 'serviceManager', file: './modules/utils/manager', displayName: 'Service Manager' }
   ];
  
