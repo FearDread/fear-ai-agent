@@ -2,7 +2,7 @@ const axios = require('axios');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const colorizer = require('../utils/colorizer');
 
-class ProxyManager {
+const ProxyManager = function() {
   constructor() {
     this.currentProxy = null;
     this.proxyList = [];
@@ -14,7 +14,9 @@ class ProxyManager {
     this.publicIp = null;
     this.lastChecked = null;
   }
+}
 
+ProxyManager.prototype = {
   /**
    * Check current public IP address
    */
@@ -45,7 +47,7 @@ class ProxyManager {
       console.log(colorizer.error(`✗ Failed to check IP: ${error.message}`));
       throw error;
     }
-  }
+  },
 
   /**
    * Get detailed IP information
@@ -76,7 +78,7 @@ class ProxyManager {
     } catch (error) {
       console.log(colorizer.warning(`Could not fetch IP details: ${error.message}`));
     }
-  }
+  },
 
   /**
    * Configure Proxifly API
@@ -104,7 +106,7 @@ class ProxyManager {
     console.log(colorizer.success('✓ Proxifly API key configured'));
     console.log(colorizer.info('Run "fetch-proxies" to get proxy list'));
     console.log();
-  }
+  },
 
   /**
    * Configure Proxy5 credentials
@@ -133,7 +135,7 @@ class ProxyManager {
     this.proxy5Credentials.password = args[1];
     console.log(colorizer.success('✓ Proxy5 credentials configured'));
     console.log();
-  }
+  },
 
   /**
    * Fetch proxies from Proxifly
@@ -201,7 +203,7 @@ class ProxyManager {
       }
     }
     console.log();
-  }
+  },
 
   /**
    * Add Proxy5 proxies manually
@@ -237,7 +239,7 @@ class ProxyManager {
     console.log(colorizer.success(`✓ Added ${proxy5Servers.length} Proxy5 proxies`));
     this.displayProxyList();
     console.log();
-  }
+  },
 
   /**
    * Display current proxy list
@@ -264,7 +266,7 @@ class ProxyManager {
       ));
     });
     console.log();
-  }
+  },
 
   /**
    * Select and activate a proxy
@@ -291,7 +293,7 @@ class ProxyManager {
     
     // Test the proxy
     await this.testProxy();
-  }
+  },
 
   /**
    * Test current proxy
@@ -313,7 +315,7 @@ class ProxyManager {
       console.log(colorizer.error(`✗ Proxy test failed: ${error.message}`));
     }
     console.log();
-  }
+  },
 
   /**
    * Clear current proxy (use direct connection)
@@ -327,7 +329,7 @@ class ProxyManager {
       console.log(colorizer.info('No proxy was active'));
     }
     console.log();
-  }
+  },
 
   /**
    * Show proxy status
@@ -348,7 +350,7 @@ class ProxyManager {
       console.log(colorizer.dim(`  Public IP: ${this.publicIp}`));
     }
     console.log();
-  }
+  },
 
   /**
    * Format proxy URL for axios agent
@@ -358,7 +360,7 @@ class ProxyManager {
       return `${proxy.protocol}://${proxy.username}:${proxy.password}@${proxy.host}:${proxy.port}`;
     }
     return `${proxy.protocol}://${proxy.host}:${proxy.port}`;
-  }
+  },
 
   /**
    * Show help
@@ -405,4 +407,5 @@ class ProxyManager {
   }
 }
 
-module.exports = ProxyManager;
+
+module.exports = ProxyManager; 

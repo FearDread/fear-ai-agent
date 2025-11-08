@@ -10,14 +10,12 @@ const SecurityAgent = function () {
   this.commandHistory = [];
   this.historyIndex = 0;
   this.maxHistory = 100;
-  
-  // Background services
   this.backgroundServices = new Map();
   this.serviceStatus = new Map();
 
   // Module definitions with metadata
   this.definitions = [
-        // Security
+    // Security
     { name: 'scanner', file: './modules/security/scanner', displayName: 'Security Scanner' },
     { name: 'webScraper', file: './modules/security/web', displayName: 'Web Scraper' },
     { name: 'vulnAssessment', file: './modules/security/vulnerability', displayName: 'Vuln Assessment' },
@@ -40,9 +38,10 @@ const SecurityAgent = function () {
     { name: 'cryptoChecker', file: './modules/crypto/exchange', displayName: 'Crypto Exchange' },
     // Utils Services
     { name: 'fileBrowser', file: './modules/utils/browser', displayName: 'File Browser' },
+    { name: 'proxyManager', file: './modules/network/proxy', displayName: 'Proxy Manager' },
     { name: 'serviceManager', file: './modules/utils/manager', displayName: 'Service Manager' }
   ];
- 
+
   // Command to module mappings
   this.mappings = {
     // File browser commands
@@ -123,18 +122,27 @@ const SecurityAgent = function () {
     'refactor-project': { module: 'codeRefactor', method: 'refactorProject', description: 'Refactor project' },
     'analyze-refactor': { module: 'codeRefactor', method: 'analyzeCode', description: 'Analyze for refactoring' },
     'compare-refactor': { module: 'codeRefactor', method: 'compareVersions', description: 'Compare versions' },
-
     // Web scraper commands
     'scrape': { module: 'webScraper', method: 'scrape', description: 'Scrape webpage' },
     'scrape-links': { module: 'webScraper', method: 'scrapeLinks', description: 'Extract links' },
     'scrape-images': { module: 'webScraper', method: 'scrapeImages', description: 'Extract images' },
     'export-scrape': { module: 'webScraper', method: 'exportScrape', description: 'Export scraped data' },
     'analyze-headers': { module: 'webScraper', method: 'analyzeSecurityHeaders', description: 'Analyze security headers' },
-
     // Vulnerability assessment commands
     'vuln-assess': { module: 'vulnAssessment', method: 'assess', description: 'Run vulnerability assessment' },
     'export-vuln': { module: 'vulnAssessment', method: 'exportResults', description: 'Export vulnerability results' },
-
+    // Proxy Manager commands
+    'check-ip': { module: 'proxyManager', method: 'checkPublicIp', description: 'Check current public IP' },
+    'configure-proxifly': { module: 'proxyManager', method: 'configureProxifly', description: 'Configure Proxifly API' },
+    'configure-proxy5': { module: 'proxyManager', method: 'configureProxy5', description: 'Configure Proxy5 credentials' },
+    'fetch-proxies': { module: 'proxyManager', method: 'fetchProxies', description: 'Fetch proxies from Proxifly' },
+    'add-proxy5': { module: 'proxyManager', method: 'addProxy5Proxies', description: 'Add Proxy5 proxies' },
+    'list-proxies': { module: 'proxyManager', method: 'displayProxyList', description: 'List available proxies' },
+    'select-proxy': { module: 'proxyManager', method: 'selectProxy', description: 'Select and activate proxy' },
+    'test-proxy': { module: 'proxyManager', method: 'testProxy', description: 'Test current proxy' },
+    'clear-proxy': { module: 'proxyManager', method: 'clearProxy', description: 'Clear active proxy' },
+    'proxy-status': { module: 'proxyManager', method: 'showStatus', description: 'Show proxy status' },
+    'proxy-help': { module: 'proxyManager', method: 'showHelp', description: 'Proxy manager help' },
     // HTML to React commands
     'html-to-react': { module: 'htmlToReact', method: 'convert', description: 'Convert HTML to React' },
     'batch-convert': { module: 'htmlToReact', method: 'convertBatch', description: 'Batch convert HTML files' },
@@ -313,8 +321,8 @@ SecurityAgent.prototype = {
       console.log(colorizer.section('Background Services'));
       this.backgroundServices.forEach((service, name) => {
         const status = this.serviceStatus.get(name);
-        const statusText = status === 'running' ? 
-          colorizer.green('[RUNNING]') : 
+        const statusText = status === 'running' ?
+          colorizer.green('[RUNNING]') :
           colorizer.dim('[STOPPED]');
         console.log(colorizer.cyan('  ' + name.padEnd(20)) + statusText);
       });
@@ -427,7 +435,7 @@ SecurityAgent.prototype = {
         'ls', 'cd', 'pwd', 'cat', 'less', 'find', 'file-info', 'tree', 'bookmark', 'browse-help'
       ],
       'AI Analysis (Main)': [
-        'ai-setup', 'ai-provider', 'ai-status', 'ai-help', 'ai-analyze', 'ai-batch', 
+        'ai-setup', 'ai-provider', 'ai-status', 'ai-help', 'ai-analyze', 'ai-batch',
         'ai-compare', 'ai-threat', 'ai-explain', 'ai-generate', 'ai-improve', 'ai-scan', 'ai-ask'
       ],
       'AI Chat (Separate Session)': [
@@ -447,6 +455,11 @@ SecurityAgent.prototype = {
       ],
       'CVE & Security': [
         'search-cve', 'check-cwe', 'check-package', 'check-exploits', 'scan-deps', 'export-cve'
+      ],
+      'Proxy Management': [
+        'check-ip', 'configure-proxifly', 'configure-proxy5', 'fetch-proxies',
+        'add-proxy5', 'list-proxies', 'select-proxy', 'test-proxy', 'clear-proxy',
+        'proxy-status', 'proxy-help'
       ],
       'System': [
         'help', 'status', 'history', 'banner', 'version', 'tips', 'clear', 'exit'
