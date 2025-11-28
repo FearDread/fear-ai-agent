@@ -1,390 +1,534 @@
-# Security AI Agent - Documentation
 
-## Overview
+# Security Agent
 
-Security AI Agent is a comprehensive command-line security testing and analysis framework built on Node.js. Version 2.3.0 provides an integrated suite of tools for security scanning, code analysis, vulnerability assessment, and AI-powered security intelligence.
+**Advanced Security Testing and Analysis Framework with AI capabilities**
+
+A comprehensive security testing toolkit that combines traditional security tools with AI-powered analysis for vulnerability assessment, code analysis, network scanning, and more.
+
+[![npm version](https://img.shields.io/npm/v/security-agent.svg)](https://www.npmjs.com/package/security-agent)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/node/v/security-agent.svg)](https://nodejs.org)
 
 ## Features
 
-### Core Capabilities
+### 🔒 Security Testing
+- **Port Scanning**: Network port scanning and service detection
+- **Vulnerability Assessment**: Automated security vulnerability scanning
+- **CVE Database**: Search and analyze CVE vulnerabilities
+- **Traffic Monitoring**: Real-time network traffic analysis
+- **Security Audits**: Comprehensive security audit reports
 
-- **File System Browser**: Navigate and inspect files directly from the command line
-- **AI-Powered Analysis**: Integrate with multiple AI providers (Anthropic Claude, OpenAI GPT, Google Gemini)
-- **Security Scanning**: Network port scanning, dependency checking, and security audits
-- **Code Analysis**: Automated code review and project analysis
-- **Traffic Monitoring**: Real-time network traffic monitoring and statistics
-- **CVE Database**: Search and analyze Common Vulnerabilities and Exposures
-- **API Testing**: Test and validate API endpoints and collections
-- **Code Refactoring**: Automated code refactoring with AI assistance
-- **Web Scraping**: Extract and analyze web content and security headers
-- **Vulnerability Assessment**: Comprehensive vulnerability scanning and reporting
-- **Card Validation**: Credit card number format validation and BIN analysis
-- **Cryptocurrency Tools**: Real-time crypto price checking and rate comparisons
-- **Code Conversion**: Convert HTML and jQuery to React components
+### 🤖 AI-Powered Analysis
+- **Code Analysis**: AI-driven security code review
+- **Threat Assessment**: Intelligent threat detection and analysis
+- **Vulnerability Explanation**: Detailed vulnerability explanations
+- **Security Recommendations**: AI-generated security improvements
+- **Interactive Chat**: Conversational AI for security questions
 
-### AI Integration
+### 🌐 Web Security
+- **Web Scraping**: Extract and analyze web content
+- **Security Headers**: Analyze HTTP security headers
+- **API Testing**: Comprehensive API endpoint testing
+- **Google Dorks**: Advanced search query generation
 
-The agent supports three AI providers with seamless switching:
+### 💻 Code Tools
+- **Code Refactoring**: Automated code improvement
+- **HTML to React**: Convert HTML to React components
+- **jQuery to React**: Migrate jQuery to React
+- **Code Comparison**: Compare code versions
 
-- **Anthropic Claude** (Default: Claude Sonnet 4.5)
-- **OpenAI GPT**
-- **Google Gemini** (with streaming support)
+### 🔧 Utilities
+- **File Browser**: Advanced file system navigation
+- **Proxy Manager**: Manage and test proxies
+- **Card Validator**: Credit card validation and BIN analysis
+- **Crypto Checker**: Cryptocurrency price tracking
+- **Background Services**: Run tasks in the background
 
 ## Installation
 
+### As a Global CLI Tool
+
 ```bash
-npm install
+npm install -g security-agent
 ```
 
-### Required Dependencies
+### As a Project Dependency
 
-- readline (built-in)
-- fs (built-in)
-- path (built-in)
-- Custom modules in ./modules directory
+```bash
+npm install security-agent
+```
+
+### From Source
+
+```bash
+git clone https://github.com/yourusername/security-agent.git
+cd security-agent
+npm install
+npm link  # For global CLI access
+```
+
+## Usage
+
+### Interactive CLI Mode
+
+Start the interactive command-line interface:
+
+```bash
+security-agent
+# or
+security-agent start
+```
+
+This launches the full-featured interactive shell with command history, auto-completion, and real-time feedback.
+
+### Execute Single Commands
+
+Run individual commands directly:
+
+```bash
+# Check network information
+security-agent exec network-info
+
+# Scan ports
+security-agent exec scan-ports localhost 80,443,8080
+
+# Check AI status
+security-agent exec ai-status
+
+# Search CVE database
+security-agent exec search-cve "log4j"
+```
+
+### Batch Command Execution
+
+Execute multiple commands from a JSON file:
+
+```bash
+# Create example batch file
+security-agent example -o my-commands.json
+
+# Run batch commands
+security-agent batch my-commands.json
+```
+
+**Example batch file** (`my-commands.json`):
+```json
+[
+  {
+    "command": "network-info",
+    "args": []
+  },
+  {
+    "command": "scan-ports",
+    "args": ["localhost", "80,443"]
+  },
+  {
+    "command": "ai-status",
+    "args": []
+  }
+]
+```
+
+### Programmatic Usage
+
+Use Security Agent as a library in your Node.js applications:
+
+```javascript
+const securityAgent = require('security-agent');
+
+// Initialize agent
+const { agent, controller } = securityAgent.initialize();
+
+// Execute commands
+async function runSecurity() {
+  try {
+    // Check network info
+    await securityAgent.executeCommand('network-info');
+    
+    // Scan ports
+    await securityAgent.executeCommand('scan-ports', ['localhost', '80,443']);
+    
+    // Get status
+    const status = securityAgent.getStatus();
+    console.log('Agent Status:', status);
+    
+    // Execute batch
+    const results = await securityAgent.executeBatch([
+      { command: 'network-info', args: [] },
+      { command: 'check-ip', args: [] }
+    ]);
+    
+    console.log('Batch Results:', results);
+    
+  } catch (error) {
+    console.error('Error:', error.message);
+  } finally {
+    // Cleanup
+    securityAgent.shutdown();
+  }
+}
+
+runSecurity();
+```
+
+### Express.js Integration
+
+Use the agent controller in your Express application:
+
+```javascript
+const express = require('express');
+const securityAgent = require('security-agent');
+
+const app = express();
+app.use(express.json());
+
+// Custom route handler
+app.post('/api/security/scan', async (req, res) => {
+  try {
+    const { target, ports } = req.body;
+    const result = await securityAgent.executeCommand('scan-ports', [target, ports]);
+    res.json({ success: true, result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Or use the built-in controller
+const agentController = securityAgent.getController();
+
+app.post('/api/agent/execute', async (req, res) => {
+  const handler = {
+    success: (res, data) => res.json(data),
+    error: (res, message, code) => res.status(code).json({ error: message })
+  };
+  
+  const logger = console;
+  
+  return agentController.executeCommand(req, res, handler, logger);
+});
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+```
+
+## CLI Commands Reference
+
+### Core Commands
+
+- `help` - Show help information
+- `status` - Display system and module status
+- `version` - Show version information
+- `history` - View command history
+- `tips` - Show tips and tricks
+- `exit` - Exit the agent
+
+### AI Commands
+
+- `ai-setup <provider> <apiKey>` - Configure AI provider (openai/anthropic)
+- `ai-status` - Show AI module status
+- `ai-analyze <file>` - Analyze code for security issues
+- `ai-scan <path>` - Quick security scan
+- `ai-ask <question>` - Ask AI a security question
+- `chat` - Start interactive AI chat session
+
+### Security Scanning
+
+- `scan-ports <target> [ports]` - Scan network ports
+- `network-info` - Display network information
+- `security-audit` - Run comprehensive security audit
+- `check-deps` - Check for vulnerable dependencies
+
+### CVE & Vulnerabilities
+
+- `search-cve <query>` - Search CVE database
+- `check-cwe <id>` - Check CWE details
+- `check-package <name>` - Check package vulnerabilities
+- `scan-deps [path]` - Scan project dependencies
+
+### Code Analysis
+
+- `analyze-code <file>` - Analyze code file
+- `analyze-project <path>` - Analyze entire project
+- `refactor-file <file>` - Refactor JavaScript file
+- `html-to-react <file>` - Convert HTML to React
+
+### Web Tools
+
+- `scrape <url>` - Scrape webpage
+- `analyze-headers <url>` - Analyze security headers
+- `test-endpoint <url>` - Test API endpoint
+
+### File Browser
+
+- `ls [path]` - List files
+- `cd <path>` - Change directory
+- `pwd` - Show current directory
+- `cat <file>` - Display file contents
+- `find <pattern>` - Search for files
+
+### Proxy Management
+
+- `check-ip` - Check current public IP
+- `configure-proxifly <apiKey>` - Configure Proxifly
+- `list-proxies` - List available proxies
+- `select-proxy <id>` - Activate proxy
+- `proxy-status` - Show proxy status
+
+### Background Services
+
+- `service-start <name>` - Start background service
+- `service-stop <name>` - Stop background service
+- `service-status` - Show all services status
+- `service-list` - List available services
 
 ## Configuration
 
 ### Environment Variables
 
-Set API keys via environment variables for automatic configuration:
+Create a `.env` file in your project root:
 
-```bash
-export ANTHROPIC_API_KEY="your-anthropic-key"
-export OPENAI_API_KEY="your-openai-key"
-export GOOGLE_API_KEY="your-google-key"
-export AI_PROVIDER="anthropic"  # Set default provider
-export NO_COLOR=1               # Disable colored output
-export DEBUG=1                  # Enable verbose debugging
+```env
+# AI Configuration
+OPENAI_API_KEY=your_openai_key_here
+ANTHROPIC_API_KEY=your_anthropic_key_here
+
+# Proxy Configuration
+PROXIFLY_API_KEY=your_proxifly_key
+PROXY5_USERNAME=your_username
+PROXY5_PASSWORD=your_password
+
+# Debug Mode
+DEBUG=false
 ```
 
-### Manual Configuration
+### AI Provider Setup
 
-Configure AI providers at runtime:
-
-```bash
-ai-setup anthropic YOUR_API_KEY
-ai-setup openai YOUR_API_KEY
-ai-setup google YOUR_API_KEY
-```
-
-## Command Reference
-
-### System Commands
-
-- `help` - Display all available commands
-- `status` - Show system and module status
-- `history` - View command history (last 20 commands)
-- `version` - Display version information
-- `tips` - Show tips, shortcuts, and example workflows
-- `banner` - Display the application banner
-- `clear` - Clear the screen
-- `exit` - Exit the application
-
-### File Browser Commands
-
-- `ls` - List files and directories
-- `cd <directory>` - Change directory
-- `pwd` - Show current directory path
-- `cat <file>` - Display file contents
-- `less <file>` - View file with pagination
-- `find <pattern>` - Search for files matching pattern
-- `file-info <file>` - Show detailed file information
-- `tree` - Display directory tree structure
-- `bookmark` - Manage directory bookmarks
-- `browse-help` - Show file browser help
-
-### AI Configuration Commands
-
-- `ai-setup <provider> <api-key>` - Configure AI provider
-- `ai-provider <provider>` - Switch between AI providers
-- `ai-status` - Show AI module configuration status
-- `ai-help` - Display detailed AI command documentation
-
-### AI Code Analysis Commands
-
-- `ai-analyze <file>` - Perform AI security analysis on code file
-- `ai-batch <files...>` - Batch analyze multiple files
-- `ai-compare <file1> <file2>` - Compare two code versions
-- `ai-scan <target>` - Quick security scan
-
-### AI Security Intelligence Commands
-
-- `ai-threat <target>` - Comprehensive threat assessment
-- `ai-explain <vulnerability>` - Explain vulnerability or CWE details
-
-### AI Code Generation Commands
-
-- `ai-generate <description>` - Generate secure Node.js code
-
-### AI Project Improvement Commands
-
-- `ai-improve <project>` - Get security recommendations for project
-
-### AI Chat & Assistance Commands
-
-- `ai-chat` - Start interactive AI chat session
-- `ai-ask <question>` - Quick AI question
-- `ai-clear-history` - Clear chat conversation history
-
-### Network Scanning Commands
-
-- `scan-ports <host>` - Scan network ports on target host
-- `network-info` - Display network information
-- `check-deps` - Check project dependencies
-- `security-audit` - Run comprehensive security audit
-
-### Code Analysis Commands
-
-- `analyze-code <file>` - Analyze code file for issues
-- `analyze-project <directory>` - Analyze entire project
-
-### Traffic Monitoring Commands
-
-- `monitor-traffic` - Start network traffic monitoring
-- `stop-monitor` - Stop traffic monitoring
-- `traffic-stats` - Show traffic statistics
-- `export-traffic <file>` - Export traffic data to file
-
-### CVE & Security Commands
-
-- `search-cve <cve-id>` - Search CVE database
-- `check-cwe <cwe-id>` - Check CWE (Common Weakness Enumeration) details
-- `check-package <package>` - Check package for known vulnerabilities
-- `check-exploits <query>` - Search for known exploits
-- `scan-deps` - Scan project dependencies for CVEs
-- `export-cve <file>` - Export CVE report
-
-### API Testing Commands
-
-- `test-endpoint <url>` - Test API endpoint
-- `test-collection <file>` - Test API collection from file
-- `export-report <file>` - Export test results report
-
-### Code Refactoring Commands
-
-- `refactor-file <file>` - Refactor JavaScript file
-- `refactor-project <directory>` - Refactor entire project
-- `analyze-refactor <file>` - Analyze code for refactoring opportunities
-- `compare-refactor <file1> <file2>` - Compare refactored versions
-
-### Web Scraping Commands
-
-- `scrape <url>` - Scrape webpage content
-- `scrape-links <url>` - Extract all links from webpage
-- `scrape-images <url>` - Extract all images from webpage
-- `export-scrape <file>` - Export scraped data to file
-- `analyze-headers <url>` - Analyze security headers
-
-### Vulnerability Assessment Commands
-
-- `vuln-assess <target>` - Run vulnerability assessment
-- `export-vuln <file>` - Export vulnerability results
-
-### Credit Card Commands
-
-- `validate-card <number>` - Validate card number format
-- `validate-batch <file>` - Batch validate card numbers
-- `analyze-bin <bin>` - Analyze Bank Identification Number
-- `show-test-cards` - Display official test card numbers
-- `explain-algorithm` - Explain validation algorithms (Luhn, etc.)
-- `card-security-report` - Generate card security report
-- `check-card-status <number>` - Check single card payment status
-- `check-card-batch <file>` - Check batch card payment status
-- `configure-card-checker` - Configure card checker settings
-- `card-checker-help` - Show card checker help
-
-### Cryptocurrency Commands
-
-- `compare-rates <crypto>` - Compare rates across exchanges
-- `crypto-price <symbol>` - Get cryptocurrency current price
-- `track-portfolio <symbols>` - Track multiple cryptocurrencies
-- `crypto-convert <amount> <from> <to>` - Convert between cryptocurrencies
-- `market-summary` - Show cryptocurrency market summary
-- `export-rates <file>` - Export rates to file
-- `crypto-help` - Show cryptocurrency commands help
-
-### HTML/jQuery Conversion Commands
-
-- `html-to-react <file>` - Convert HTML file to React component
-- `batch-convert <directory>` - Batch convert HTML files
-- `analyze-html <file>` - Analyze HTML structure
-- `jquery-to-react <file>` - Convert jQuery code to React
-- `jq-batch-convert <directory>` - Batch convert jQuery files
-- `analyze-jquery <file>` - Analyze jQuery code structure
-
-## Usage Examples
-
-### Basic File Navigation
+Configure AI providers interactively:
 
 ```bash
-FEAR >> ls
-FEAR >> cd src
-FEAR >> pwd
-FEAR >> cat config.js
-FEAR >> find *.js
+security-agent exec ai-setup openai YOUR_API_KEY
+# or
+security-agent exec ai-setup anthropic YOUR_API_KEY
 ```
 
-### AI-Powered Security Analysis
+## API Reference
 
-```bash
-FEAR >> ai-setup anthropic sk-ant-xxxxx
-FEAR >> ai-analyze vulnerable.js
-FEAR >> ai-threat myapp
-FEAR >> ai-improve .
+### Main Functions
+
+#### `initialize()`
+Initialize and return agent with controller
+```javascript
+const { agent, controller } = securityAgent.initialize();
 ```
 
-### Security Audit Workflow
-
-```bash
-FEAR >> security-audit
-FEAR >> scan-deps
-FEAR >> search-cve CVE-2024-1234
-FEAR >> ai-explain CVE-2024-1234
+#### `executeCommand(command, args)`
+Execute a single command programmatically
+```javascript
+await securityAgent.executeCommand('scan-ports', ['localhost', '80,443']);
 ```
 
-### Code Refactoring Workflow
-
-```bash
-FEAR >> analyze-code old.js
-FEAR >> refactor-file old.js
-FEAR >> ai-compare old.js old.refactored.js
+#### `executeBatch(commands)`
+Execute multiple commands in batch
+```javascript
+const results = await securityAgent.executeBatch([
+  { command: 'network-info', args: [] },
+  { command: 'check-ip', args: [] }
+]);
 ```
 
-### Interactive AI Chat
-
-```bash
-FEAR >> ai-chat
-AI Chat > Explain SQL injection vulnerabilities
-AI Chat > /history
-AI Chat > /save security-notes.txt
-AI Chat > /exit
+#### `getStatus()`
+Get agent and module status
+```javascript
+const status = securityAgent.getStatus();
+console.log(status.initialized, status.modules);
 ```
 
-### Vulnerability Research
-
-```bash
-FEAR >> search-cve authentication
-FEAR >> check-package express
-FEAR >> ai-threat authentication-bypass
-FEAR >> export-cve vulnerability-report.json
+#### `getCommands()`
+Get all available commands
+```javascript
+const commands = securityAgent.getCommands();
 ```
 
-## Command Line Features
+#### `commandExists(command)`
+Check if a command exists
+```javascript
+const exists = securityAgent.commandExists('scan-ports');
+```
 
-### Keyboard Shortcuts
+#### `shutdown()`
+Shutdown agent and cleanup
+```javascript
+securityAgent.shutdown();
+```
 
-- **TAB** - Command autocomplete
-- **Up/Down Arrows** - Navigate command history
-- **Ctrl+C** - Cancel current operation
-- **Ctrl+D** - Exit application
+## Examples
 
-### Command History
+### Example 1: Security Audit Script
 
-- Maintains last 100 commands
-- View with `history` command
-- Navigate with arrow keys
+```javascript
+const securityAgent = require('security-agent');
 
-### Auto-completion
+async function runAudit(target) {
+  const { agent } = securityAgent.initialize();
+  
+  console.log('Running security audit...');
+  
+  const commands = [
+    { command: 'scan-ports', args: [target, '1-1000'] },
+    { command: 'security-audit', args: [] },
+    { command: 'check-deps', args: [] },
+    { command: 'scan-deps', args: ['./'] }
+  ];
+  
+  const results = await securityAgent.executeBatch(commands);
+  
+  results.forEach(result => {
+    console.log(`${result.command}: ${result.success ? '✓' : '✗'}`);
+  });
+  
+  securityAgent.shutdown();
+}
 
-Press TAB to autocomplete commands. If multiple matches exist, all options will be displayed.
+runAudit('example.com');
+```
+
+### Example 2: AI Code Review
+
+```javascript
+const securityAgent = require('security-agent');
+
+async function reviewCode(filePath) {
+  await securityAgent.executeCommand('ai-setup', ['openai', process.env.OPENAI_API_KEY]);
+  
+  console.log('Analyzing code with AI...');
+  await securityAgent.executeCommand('ai-analyze', [filePath]);
+  
+  console.log('Getting security recommendations...');
+  await securityAgent.executeCommand('ai-improve', [filePath]);
+  
+  securityAgent.shutdown();
+}
+
+reviewCode('./src/app.js');
+```
+
+### Example 3: Automated CVE Monitoring
+
+```javascript
+const securityAgent = require('security-agent');
+
+async function monitorCVEs(packages) {
+  const { agent } = securityAgent.initialize();
+  
+  for (const pkg of packages) {
+    console.log(`Checking ${pkg}...`);
+    await securityAgent.executeCommand('check-package', [pkg]);
+  }
+  
+  await securityAgent.executeCommand('export-cve', ['./cve-report.json']);
+  
+  securityAgent.shutdown();
+}
+
+monitorCVEs(['express', 'axios', 'lodash']);
+```
 
 ## Module Architecture
 
-The agent uses a modular architecture with the following structure:
+Security Agent uses a modular architecture:
 
 ```
-modules/
-├── utils/
-│   ├── browser.js      # File system browser
-│   └── colorizer.js    # Terminal output formatting
-├── security/
-│   ├── scanner.js      # Network scanning
-│   ├── web.js          # Web scraping
-│   ├── vulnerability.js # Vulnerability assessment
-│   ├── monitor.js      # Traffic monitoring
-│   └── cve.js          # CVE database
-├── ai/
-│   └── ai.js           # AI integration
-├── code/
-│   ├── analyzer.js     # Code analysis
-│   ├── refactor.js     # Code refactoring
-│   ├── react.js        # HTML to React
-│   └── jquery.js       # jQuery to React
-├── analyze/
-│   └── api.js          # API testing
-├── ccard/
-│   ├── validator.js    # Card validation
-│   └── checker.js      # Card status checking
-└── crypto/
-    └── exchange.js     # Cryptocurrency tools
+security-agent/
+├── index.js              # Main entry point
+├── agent.js              # Core agent class
+├── controllers/          # API controllers
+│   └── agentController.js
+├── routes/               # Express routes
+│   └── agent.js
+├── modules/
+│   ├── security/         # Security modules
+│   ├── ai/              # AI modules
+│   ├── code/            # Code analysis
+│   ├── network/         # Network tools
+│   ├── analyze/         # Analysis tools
+│   └── utils/           # Utilities
+└── bin/
+    └── cli.js           # CLI interface
 ```
 
-## Best Practices
+## Development
 
-### Security
-
-- Store API keys in environment variables, never in code
-- Use `ai-status` to verify configuration before running analyses
-- Export reports regularly for audit trails
-- Run `security-audit` before deploying applications
-
-### Performance
-
-- Use batch commands for multiple file operations
-- Clear AI chat history periodically with `ai-clear-history`
-- Export large datasets to files rather than viewing in terminal
-
-### Workflow Optimization
-
-- Bookmark frequently accessed directories
-- Use command history for repeated operations
-- Configure default AI provider via environment variable
-- Create shell aliases for common command sequences
-
-## Troubleshooting
-
-### Module Not Loading
-
-If a module shows `[UNAVAILABLE]` status:
-
-1. Check that all dependencies are installed
-2. Verify module file exists in correct path
-3. Enable DEBUG mode: `DEBUG=1 node agent.js`
-
-### AI Configuration Issues
+### Running Tests
 
 ```bash
-FEAR >> ai-status  # Check current configuration
-FEAR >> ai-setup anthropic YOUR_KEY  # Reconfigure
-FEAR >> ai-help  # View detailed AI documentation
+npm test
+npm run test:watch
+npm run test:coverage
 ```
 
-### Command Not Found
+### Linting
 
 ```bash
-FEAR >> help  # View all available commands
-FEAR >> browse-help  # View file browser commands
-FEAR >> ai-help  # View AI commands
+npm run lint
+npm run lint:fix
 ```
 
-## Version Information
+### Building Documentation
 
-**Current Version**: 2.3.0
+```bash
+npm run docs
+```
 
-**Node.js Requirements**: Compatible with Node.js 12.x and higher
+## Contributing
 
-**Platform Support**: Cross-platform (Windows, macOS, Linux)
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This is a security testing framework intended for authorized security assessments and educational purposes only. Always obtain proper authorization before testing systems you do not own.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
-For issues, questions, or feature requests, consult the following resources:
+- 📧 Email: your.email@example.com
+- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/security-agent/issues)
+- 📖 Documentation: [Full Docs](https://github.com/yourusername/security-agent/wiki)
 
-- Run `help` for command reference
-- Run `tips` for usage examples and workflows
-- Run `ai-help` for AI-specific documentation
-- Enable DEBUG mode for verbose error output
+## Changelog
+
+### Version 2.4.0
+- Added AI chat session support
+- Implemented background services
+- Enhanced proxy management
+- Improved code analysis tools
+- Added cryptocurrency checker
+- Enhanced card validation
+
+### Version 2.3.0
+- Added CVE database integration
+- Implemented traffic monitoring
+- Enhanced web scraping capabilities
+
+### Version 2.2.0
+- Added AI-powered security analysis
+- Implemented code refactoring tools
+
+## Security Notice
+
+This tool is designed for authorized security testing only. Users are responsible for ensuring they have permission to test any systems. Unauthorized access to computer systems is illegal.
+
+## Acknowledgments
+
+- Built with Node.js
+- Uses various open-source security tools
+- AI integration with OpenAI and Anthropic
+
+---
+
+**Made with ❤️ for the security community**
