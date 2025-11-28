@@ -1,6 +1,4 @@
-
-// controllers/agentController.js - Controller for Security Agent operations
-const SecurityAgent = require('../libs/agent');
+const SecurityAgent = require('./agent');
 
 class AgentController {
   constructor() {

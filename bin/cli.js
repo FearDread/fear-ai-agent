@@ -1,6 +1,3 @@
-
-#!/usr/bin/env node
-
 /**
  * Security Agent CLI
  * Command-line interface for the Security Agent framework

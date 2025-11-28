@@ -1,4 +1,3 @@
-
 // index.js - Main entry point for Security Agent Library
 const SecurityAgent = require('./src/agent');
 const agentController = require('./src/controller');
