@@ -1,7 +1,6 @@
-
 {
   "name": "@feardread/security-agent",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Advanced Security Testing and Analysis Framework with AI capabilities",
   "main": "index.js",
   "bin": {
@@ -67,8 +66,8 @@
     "supertest": "^6.3.3"
   },
   "optionalDependencies": {
-    "openai": "^4.20.0",
-    "anthropic": "^0.9.0"
+    "anthropic": "^0.9.0",
+    "openai": "^4.20.0"
   },
   "jest": {
     "testEnvironment": "node",
